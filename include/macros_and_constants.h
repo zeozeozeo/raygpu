@@ -90,9 +90,9 @@ constexpr float RAD2DEG = 180.0 / 3.14159265358979323;
 
 #if defined(RG_STATIC) && RG_STATIC != 0
     #ifdef __cplusplus
-    #define RGAPI extern "C"
+        #define RGAPI extern "C"
     #else
-    #define RGAPI
+        #define RGAPI
     #endif
 #elif defined(_WIN32)
     #if defined(RG_EXPORTS) && RG_EXPORTS != 0
@@ -138,7 +138,6 @@ do {                                                                            
 
 typedef unsigned Bool32;
 
-#pragma once
 #include <stdint.h>
 #include <limits.h>
 

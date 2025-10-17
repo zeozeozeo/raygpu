@@ -32,31 +32,13 @@
 #if SUPPORT_VULKAN_BACKEND == 1
     #include <wgvk.h>
 #endif
-#include "raygpu.h"
+#include <raygpu.h>
+#include "renderstate.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #include <webgpu/webgpu.h>
-
-// Note: Flag enums like RGBufferUsage are defined with values matching WGPU, so a direct cast is sufficient.
-// The functions are provided for consistency and type safety.
 
 static inline WGPUBlendFactor RG_to_WGPU_BlendFactor(RGBlendFactor factor) {
     switch (factor) {
@@ -491,34 +473,24 @@ DEFINE_QUICKSORT_FUNCTION(ResourceTypeDescriptor, left->location < right->locati
 //}
 
 
-typedef struct ColorAttachmentState{
-    PixelFormat attachmentFormats[MAX_COLOR_ATTACHMENTS];
-    uint32_t colorAttachmentCount;
-    #ifdef __cplusplus
-    bool operator==(const ColorAttachmentState& other)const noexcept{
-        if(colorAttachmentCount == other.colorAttachmentCount){
-            for(uint32_t i = 0;i < colorAttachmentCount;i++){
-                if(attachmentFormats[i] != other.attachmentFormats[i]){
-                    return false;
-                }
-            }
-            return true;
-        }
-        return false;
+static inline ColorAttachmentState GetAttachmentState(const RenderTexture* texture){
+    //rassert(texture.colorAttachmentCount > 0, "RenderTexture must have at least 1 attachment");
+    //if(texture.colorAttachments[0].sampleCount > 1){
+    //    rassert(texture.colorMultisample.id != NULL, "Multisampled rendertexture must have resolve");
+    //}
+    ColorAttachmentState ret = {
+        .colorAttachmentCount = texture->colorAttachmentCount
+    };
+    if(texture->colorMultisample.id){
+        ret.sampleCount = texture->colorMultisample.sampleCount;
     }
-    #endif
-}ColorAttachmentState;
-
-static inline bool ColorAttachmentState_eq(const ColorAttachmentState* a, const ColorAttachmentState* b){
-    if(a->colorAttachmentCount == b->colorAttachmentCount){
-        for(uint32_t i = 0;i < a->colorAttachmentCount;i++){
-            if(a->attachmentFormats[i] != b->attachmentFormats[i]){
-                return false;
-            }
-        }
-        return true;
+    else{
+        ret.sampleCount = 1;
     }
-    return false;
+    for(uint32_t i = 0;i < texture->colorAttachmentCount;i++){
+        ret.attachmentFormats[i] = texture->colorAttachments[i].format;
+    }
+    return ret;
 }
 
 typedef struct ModifiablePipelineState{
@@ -608,12 +580,11 @@ static inline bool RGBlendState_eq(const RGBlendState* a, const RGBlendState* b)
 
 static inline bool RenderSettings_eq(const RenderSettings* a, const RenderSettings* b){
     return
-        a->depthTest    == b->depthTest     && 
-        a->faceCull     == b->faceCull      && 
-        a->sampleCount  == b->sampleCount   && 
-        a->lineWidth    == b->lineWidth     && 
-        RGBlendState_eq(&a->blendState, &b->blendState)    && 
-        a->frontFace    == b->frontFace     && 
+        a->depthTest    == b->depthTest     &&
+        a->faceCull     == b->faceCull      &&
+        a->lineWidth    == b->lineWidth     &&
+        RGBlendState_eq(&a->blendState, &b->blendState)    &&
+        a->frontFace    == b->frontFace     &&
         a->depthCompare == b->depthCompare  &&
     true;
 }
@@ -631,7 +602,7 @@ static inline size_t hashModifiablePipelineState(ModifiablePipelineState mfps_){
     ModifiablePipelineState* mfps = &mfps_;
     size_t ret = hashVectorOfAttributeAndResidence(mfps->vertexAttributes, mfps->vertexAttributeCount) ^ hash_bytes(&mfps->settings, sizeof(RenderSettings)) ^ ROT_BYTES(mfps->primitiveType, 17);
     for(uint32_t i = 0;i < mfps->colorAttachmentState.colorAttachmentCount;i++){
-        ret = ROT_BYTES(mfps->primitiveType, 3) ^ ((size_t)mfps->colorAttachmentState.attachmentFormats[i]);
+        ret = ROT_BYTES(ret, 7) ^ ROT_BYTES(mfps->primitiveType, 3) ^ ROT_BYTES((size_t)mfps->colorAttachmentState.attachmentFormats[i], 11)  ^ ((size_t)mfps->colorAttachmentState.sampleCount);
     }
     return ret;
 }
@@ -798,7 +769,7 @@ static inline size_t hashModifiablePipelineState(ModifiablePipelineState mfps_){
         assert(!KeyCmpFunc(key, map->empty_key_sentinel));                                                                       \
         if (map->current_capacity == 0 || map->table == NULL)                                                                    \
             return 0;                                                                                                            \
-        Name##_kv_pair* slot = Name##_find_slot(map, key);                                                                        \
+        Name##_kv_pair* slot = Name##_find_slot(map, key);                                                                       \
         if (KeyCmpFunc(slot->key, key)) {                                                                                        \
             KeyDeleteFunc(slot->key);                                                                                            \
             ValueDeleteFunc(slot->value);                                                                                        \

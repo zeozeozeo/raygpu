@@ -420,7 +420,6 @@ typedef struct RGColor{
 typedef struct RenderSettings{
     Bool32 depthTest;
     Bool32 faceCull;
-    uint32_t sampleCount;
     uint32_t lineWidth;
     RGBlendState blendState;
     RGFrontFace frontFace;
@@ -523,8 +522,30 @@ typedef struct DescribedPipelineLayout{
     DescribedBindGroupLayout bindgroupLayouts[4]; //4 is a reasonable max
 }DescribedPipelineLayout;
 
+typedef struct ColorAttachmentState{
+    PixelFormat attachmentFormats[MAX_COLOR_ATTACHMENTS];
+    uint32_t colorAttachmentCount;
+    uint32_t sampleCount;
+}ColorAttachmentState;
+
+static inline bool ColorAttachmentState_eq(const ColorAttachmentState* a, const ColorAttachmentState* b){
+    if(a->colorAttachmentCount == b->colorAttachmentCount){
+        if(a->sampleCount != b->sampleCount){
+            return false;
+        }
+        for(uint32_t i = 0;i < a->colorAttachmentCount;i++){
+            if(a->attachmentFormats[i] != b->attachmentFormats[i]){
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
 typedef struct DescribedRenderpass{
     RenderSettings settings;
+    ColorAttachmentState colorAttachmentState;
     RGLoadOp colorLoadOp;
     RGStoreOp colorStoreOp;
     RGLoadOp depthLoadOp;
@@ -1617,6 +1638,7 @@ RGAPI DescribedComputePipeline* LoadComputePipeline(const char* shaderCode);
 RGAPI DescribedComputePipeline* LoadComputePipelineEx(const char* shaderCode, const ResourceTypeDescriptor* uniforms, uint32_t uniformCount);
 RGAPI DescribedRaytracingPipeline* LoadRaytracingPipeline(const DescribedShaderModule* shaderModule);
 RGAPI Shader DefaultShader(cwoid);
+RGAPI RenderSettings GetCurrentSettings(cwoid);
 RGAPI RenderSettings GetDefaultSettings(cwoid);
 RGAPI Texture GetDefaultTexture(cwoid);
 RGAPI void UnloadPipeline(DescribedPipeline* pl);

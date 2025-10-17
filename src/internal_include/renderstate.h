@@ -3,6 +3,7 @@
 #define RENDERSTATE_H
 
 #include <stdlib.h>
+#include <string.h>
 #include <macros_and_constants.h>
 #include <raygpu.h>
 #if SUPPORT_WGPU_BACKEND == 1
@@ -69,113 +70,113 @@ DEFINE_ARRAY_STACK(RenderTexture, static inline, 8);
 #define PHM_DELETED_SLOT_KEY ((void*)0xFFFFFFFFFFFFFFFFULL)
 #endif
 
-#define DEFINE_VECTOR_IW(SCOPE, Type, Name)                                                                                         \
-                                                                                                                                 \
-    typedef struct {                                                                                                             \
-        Type *data;                                                                                                              \
-        size_t size;                                                                                                             \
-        size_t capacity;                                                                                                         \
-    } Name;                                                                                                                      \
-                                                                                                                                 \
-    SCOPE void Name##_init(Name *v) {                                                                                            \
-        v->data = NULL;                                                                                                          \
-        v->size = 0;                                                                                                             \
-        v->capacity = 0;                                                                                                         \
-    }                                                                                                                            \
-                                                                                                                                 \
-    SCOPE bool Name##_empty(Name *v) { return v->size == 0; }                                                                    \
-                                                                                                                                 \
-    SCOPE void Name##_initWithSize(Name *v, size_t initialSize) {                                                                \
-        if (initialSize == 0) {                                                                                                  \
-            Name##_init(v);                                                                                                      \
-        } else {                                                                                                                 \
-            v->data = (Type *)calloc(initialSize, sizeof(Type));                                                                 \
-            if (!v->data) {                                                                                                      \
-                Name##_init(v);                                                                                                  \
-                return;                                                                                                          \
-            }                                                                                                                    \
-            v->size = initialSize;                                                                                               \
-            v->capacity = initialSize;                                                                                           \
-        }                                                                                                                        \
-    }                                                                                                                            \
-                                                                                                                                 \
-    SCOPE void Name##_free(Name *v) {                                                                                            \
-        if (v->data != NULL) {                                                                                                   \
-            free((void*)v->data);                                                                                                       \
-        }                                                                                                                        \
-        Name##_init(v);                                                                                                          \
-    }                                                                                                                            \
-    SCOPE void Name##_clear(Name *v) { v->size = 0; }                                                                            \
-    SCOPE int Name##_reserve(Name *v, size_t new_capacity) {                                                                     \
-        if (new_capacity <= v->capacity) {                                                                                       \
-            return 0;                                                                                                            \
-        }                                                                                                                        \
-        Type *new_data = (Type *)realloc((void*)v->data, new_capacity * sizeof(Type));                                           \
-        if (!new_data && new_capacity > 0) {                                                                                     \
-            return -1;                                                                                                           \
-        }                                                                                                                        \
-        v->data = new_data;                                                                                                      \
-        v->capacity = new_capacity;                                                                                              \
-        return 0;                                                                                                                \
-    }                                                                                                                            \
-                                                                                                                                 \
-    SCOPE int Name##_push_back(Name *v, Type value) {                                                                            \
-        if (v->size >= v->capacity) {                                                                                            \
-            size_t new_capacity;                                                                                                 \
-            if (v->capacity == 0) {                                                                                              \
-                new_capacity = 8;                                                                                                \
-            } else {                                                                                                             \
-                new_capacity = v->capacity * 2;                                                                                  \
-            }                                                                                                                    \
-            if (new_capacity < v->capacity) {                                                                                    \
-                return -1;                                                                                                       \
-            }                                                                                                                    \
-            if (Name##_reserve(v, new_capacity) != 0) {                                                                          \
-                return -1;                                                                                                       \
-            }                                                                                                                    \
-        }                                                                                                                        \
-        v->data[v->size++] = value;                                                                                              \
-        return 0;                                                                                                                \
-    }                                                                                                                            \
-    SCOPE void Name##_pop_back(Name *v) { --v->size; }                                                                           \
-    SCOPE Type *Name##_get(Name *v, size_t index) {                                                                              \
-        if (index >= v->size) {                                                                                                  \
-            return NULL;                                                                                                         \
-        }                                                                                                                        \
-        return &v->data[index];                                                                                                  \
-    }                                                                                                                            \
-                                                                                                                                 \
-    SCOPE size_t Name##_size(const Name *v) { return v->size; }                                                                  \
-                                                                                                                                 \
-    SCOPE void Name##_move(Name *dest, Name *source) {                                                                           \
-        if (dest == source) {                                                                                                    \
-            return;                                                                                                              \
-        }                                                                                                                        \
-        dest->data = source->data;                                                                                               \
-        dest->size = source->size;                                                                                               \
-        dest->capacity = source->capacity;                                                                                       \
-        Name##_init(source);                                                                                                     \
-    }                                                                                                                            \
-                                                                                                                                 \
-    SCOPE void Name##_copy(Name *dest, const Name *source) {                                                                     \
-        Name##_free(dest);                                                                                                       \
-                                                                                                                                 \
-        if (source->size == 0) {                                                                                                 \
-            return;                                                                                                              \
-        }                                                                                                                        \
-                                                                                                                                 \
-        size_t capacity_to_allocate = source->capacity;                                                                          \
-        if (capacity_to_allocate < source->size) {                                                                               \
-            capacity_to_allocate = source->size;                                                                                 \
-        }                                                                                                                        \
-                                                                                                                                 \
-        dest->data = (Type*)malloc(capacity_to_allocate * sizeof(Type));                                                        \
-        if (!dest->data) {                                                                                                       \
-            return;                                                                                                              \
-        }                                                                                                                        \
-        memcpy((void*)dest->data, (void*)source->data, source->size * sizeof(Type));                                             \
-        dest->size = source->size;                                                                                               \
-        dest->capacity = capacity_to_allocate;                                                                                   \
+#define DEFINE_VECTOR_IW(SCOPE, Type, Name)                                              \
+                                                                                         \
+    typedef struct {                                                                     \
+        Type *data;                                                                      \
+        size_t size;                                                                     \
+        size_t capacity;                                                                 \
+    } Name;                                                                              \
+                                                                                         \
+    SCOPE void Name##_init(Name *v) {                                                    \
+        v->data = NULL;                                                                  \
+        v->size = 0;                                                                     \
+        v->capacity = 0;                                                                 \
+    }                                                                                    \
+                                                                                         \
+    SCOPE bool Name##_empty(Name *v) { return v->size == 0; }                            \
+                                                                                         \
+    SCOPE void Name##_initWithSize(Name *v, size_t initialSize) {                        \
+        if (initialSize == 0) {                                                          \
+            Name##_init(v);                                                              \
+        } else {                                                                         \
+            v->data = (Type *)calloc(initialSize, sizeof(Type));                         \
+            if (!v->data) {                                                              \
+                Name##_init(v);                                                          \
+                return;                                                                  \
+            }                                                                            \
+            v->size = initialSize;                                                       \
+            v->capacity = initialSize;                                                   \
+        }                                                                                \
+    }                                                                                    \
+                                                                                         \
+    SCOPE void Name##_free(Name *v) {                                                    \
+        if (v->data != NULL) {                                                           \
+            free((void*)v->data);                                                        \
+        }                                                                                \
+        Name##_init(v);                                                                  \
+    }                                                                                    \
+    SCOPE void Name##_clear(Name *v) { v->size = 0; }                                    \
+    SCOPE int Name##_reserve(Name *v, size_t new_capacity) {                             \
+        if (new_capacity <= v->capacity) {                                               \
+            return 0;                                                                    \
+        }                                                                                \
+        Type *new_data = (Type *)realloc((void*)v->data, new_capacity * sizeof(Type));   \
+        if (!new_data && new_capacity > 0) {                                             \
+            return -1;                                                                   \
+        }                                                                                \
+        v->data = new_data;                                                              \
+        v->capacity = new_capacity;                                                      \
+        return 0;                                                                        \
+    }                                                                                    \
+                                                                                         \
+    SCOPE int Name##_push_back(Name *v, Type value) {                                    \
+        if (v->size >= v->capacity) {                                                    \
+            size_t new_capacity;                                                         \
+            if (v->capacity == 0) {                                                      \
+                new_capacity = 8;                                                        \
+            } else {                                                                     \
+                new_capacity = v->capacity * 2;                                          \
+            }                                                                            \
+            if (new_capacity < v->capacity) {                                            \
+                return -1;                                                               \
+            }                                                                            \
+            if (Name##_reserve(v, new_capacity) != 0) {                                  \
+                return -1;                                                               \
+            }                                                                            \
+        }                                                                                \
+        v->data[v->size++] = value;                                                      \
+        return 0;                                                                        \
+    }                                                                                    \
+    SCOPE void Name##_pop_back(Name *v) { --v->size; }                                   \
+    SCOPE Type *Name##_get(Name *v, size_t index) {                                      \
+        if (index >= v->size) {                                                          \
+            return NULL;                                                                 \
+        }                                                                                \
+        return &v->data[index];                                                          \
+    }                                                                                    \
+                                                                                         \
+    SCOPE size_t Name##_size(const Name *v) { return v->size; }                          \
+                                                                                         \
+    SCOPE void Name##_move(Name *dest, Name *source) {                                   \
+        if (dest == source) {                                                            \
+            return;                                                                      \
+        }                                                                                \
+        dest->data = source->data;                                                       \
+        dest->size = source->size;                                                       \
+        dest->capacity = source->capacity;                                               \
+        Name##_init(source);                                                             \
+    }                                                                                    \
+                                                                                         \
+    SCOPE void Name##_copy(Name *dest, const Name *source) {                             \
+        Name##_free(dest);                                                               \
+                                                                                         \
+        if (source->size == 0) {                                                         \
+            return;                                                                      \
+        }                                                                                \
+                                                                                         \
+        size_t capacity_to_allocate = source->capacity;                                  \
+        if (capacity_to_allocate < source->size) {                                       \
+            capacity_to_allocate = source->size;                                         \
+        }                                                                                \
+                                                                                         \
+        dest->data = (Type*)malloc(capacity_to_allocate * sizeof(Type));                 \
+        if (!dest->data) {                                                               \
+            return;                                                                      \
+        }                                                                                \
+        memcpy((void*)dest->data, (void*)source->data, source->size * sizeof(Type));     \
+        dest->size = source->size;                                                       \
+        dest->capacity = capacity_to_allocate;                                           \
     }
 
 
@@ -213,7 +214,7 @@ DEFINE_ARRAY_STACK(RenderTexture, static inline, 8);
             i = (i + 1) & mask;                                                                                                    \
         }                                                                                                                          \
     }                                                                                                                              \
-                                                                                                                                    \
+                                                                                                                                \
     /* internal: probe to find slot to insert/update. prefers first tombstone if seen */                                           \
     static inline uint64_t Name##_find_index_for_put(const Name *map, void *key) {                                                 \
         uint64_t mask = map->current_capacity - 1;                                                                                 \
@@ -293,18 +294,18 @@ DEFINE_ARRAY_STACK(RenderTexture, static inline, 8);
         map->table[idx].value = value;                                                                                             \
         return inserted;                                                                                                           \
     }                                                                                                                              \
-                                                                                                                                    \
-    SCOPE ValueType* Name##_get(Name *map, void *key) {                                                                  \
+                                                                                                                                   \
+    SCOPE ValueType* Name##_get(Name *map, void *key) {                                                                            \
         if (key == NULL) {                                                                                                         \
-            if (!map->has_null_key) return NULL;                                                                                  \
-            return &map->null_value;                                                                                       \
+            if (!map->has_null_key) return NULL;                                                                                   \
+            return &map->null_value;                                                                                               \
         }                                                                                                                          \
-        if (map->current_capacity == 0 || map->table == NULL) return NULL;                                                        \
+        if (map->current_capacity == 0 || map->table == NULL) return NULL;                                                         \
         uint64_t idx = Name##_find_index_for_get(map, key);                                                                        \
-        if (map->table[idx].key != key) return NULL;                                                                              \
+        if (map->table[idx].key != key) return NULL;                                                                               \
         return &map->table[idx].value;                                                                                             \
     }                                                                                                                              \
-                                                                                                                                    \
+                                                                                                                                   \
     SCOPE bool Name##_erase(Name *map, void *key) {                                                                                \
         if (key == NULL) {                                                                                                         \
             bool had = map->has_null_key;                                                                                          \
@@ -318,7 +319,7 @@ DEFINE_ARRAY_STACK(RenderTexture, static inline, 8);
         map->current_size--;                                                                                                       \
         return true;                                                                                                               \
     }                                                                                                                              \
-                                                                                                                                    \
+                                                                                                                                   \
     SCOPE void Name##_free(Name *map) {                                                                                            \
         if (map->table) {                                                                                                          \
             free(map->table);                                                                                                      \
@@ -335,6 +336,8 @@ DEFINE_PTR_HASH_MAP_R(static inline, CreatedWindowMap, RGWindowImpl)
 DEFINE_VECTOR_IW(static inline, DescribedBuffer*, DescribedBufferVector)
 
 
+
+
 typedef struct renderstate {
     WGPUPresentMode unthrottled_PresentMode;
     WGPUPresentMode throttled_PresentMode;
@@ -345,7 +348,9 @@ typedef struct renderstate {
     PixelFormat frameBufferFormat;
 
     Shader defaultShader;
+    
     RenderSettings currentSettings;
+
     Shader activeShader;
 
     DescribedRenderpass clearPass;

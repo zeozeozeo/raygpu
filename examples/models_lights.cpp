@@ -87,7 +87,6 @@ int main(){
     
     RenderSettings settings  = {0};
     settings.depthTest = 1;
-    settings.sampleCount = msaa ? 4 : 1;
     settings.depthCompare = RGCompareFunction_LessEqual;
     Shader pl = LoadShaderSingleSource(shaderSource);
     Camera3D cam = CLITERAL(Camera3D){

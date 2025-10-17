@@ -248,6 +248,7 @@ void BindShaderWithSettings(Shader shader, PrimitiveType drawMode, RenderSetting
     ShaderImpl *impl = allocatedShaderIDs_shc + shader.id;
     impl->state.primitiveType = drawMode;
     impl->state.settings = settings;
+    impl->state.colorAttachmentState = GetActiveRenderPass()->colorAttachmentState;
     WGPURenderPipeline activePipeline = PipelineHashMap_getOrCreate(&impl->pipelineCache, &impl->state, &impl->shaderModule, &impl->bglayout, &impl->layout);
     wgpuRenderPassEncoderSetPipeline(g_renderstate.activeRenderpass->rpEncoder, activePipeline);
     wgpuRenderPassEncoderSetBindGroup(g_renderstate.activeRenderpass->rpEncoder, 0, UpdateAndGetNativeBindGroup(&impl->bindGroup), 0, NULL);
@@ -257,13 +258,13 @@ void BindShader(Shader shader, PrimitiveType drawMode) {
     BindShaderWithSettings(shader, drawMode, g_renderstate.currentSettings);
 }
 void BindPipeline(DescribedPipeline *pipeline) {
-    wgpuRenderPassEncoderSetPipeline((WGPURenderPassEncoder)g_renderstate.activeRenderpass->rpEncoder,
-                                     (WGPURenderPipeline)pipeline->activePipeline);
+    wgpuRenderPassEncoderSetPipeline((WGPURenderPassEncoder)g_renderstate.activeRenderpass->rpEncoder, (WGPURenderPipeline)pipeline->activePipeline);
 }
 
 void ResizeBuffer(DescribedBuffer *buffer, size_t newSize) {
-    if (newSize == buffer->size)
+    if (newSize == buffer->size){
         return;
+    }
 
     DescribedBuffer newbuffer = {0};
     newbuffer.usage = buffer->usage;
@@ -1736,11 +1737,14 @@ void BeginRenderpassEx(DescribedRenderpass *renderPass) {
 
     WGPURenderPassColorAttachment colorAttachment  = {0};
     WGPURenderPassDepthStencilAttachment depthAttachment  = {0};
-    if (RenderTexture_stack_cpeek(&g_renderstate.renderTargetStack)->colorMultisample.view) {
-        colorAttachment.view = (WGPUTextureView)RenderTexture_stack_cpeek(&g_renderstate.renderTargetStack)->colorMultisample.view;
-        colorAttachment.resolveTarget = (WGPUTextureView)RenderTexture_stack_cpeek(&g_renderstate.renderTargetStack)->texture.view;
+
+    const RenderTexture* topOfStack = RenderTexture_stack_cpeek(&g_renderstate.renderTargetStack);
+
+    if (topOfStack->colorMultisample.view) {
+        colorAttachment.view = (WGPUTextureView)topOfStack->colorMultisample.view;
+        colorAttachment.resolveTarget = (WGPUTextureView)topOfStack->texture.view;
     } else {
-        colorAttachment.view = (WGPUTextureView)RenderTexture_stack_cpeek(&g_renderstate.renderTargetStack)->texture.view;
+        colorAttachment.view = (WGPUTextureView)topOfStack->texture.view;
         colorAttachment.resolveTarget = NULL;
     }
 
@@ -1754,7 +1758,7 @@ void BeginRenderpassEx(DescribedRenderpass *renderPass) {
         renderPass->colorClear.a,
     };
 
-    depthAttachment.view = (WGPUTextureView)RenderTexture_stack_cpeek(&g_renderstate.renderTargetStack)->depth.view;
+    depthAttachment.view = (WGPUTextureView)topOfStack->depth.view;
     depthAttachment.depthLoadOp = RG_to_WGPU_LoadOp(renderPass->depthLoadOp);
     depthAttachment.depthStoreOp = RG_to_WGPU_StoreOp(renderPass->depthStoreOp);
     depthAttachment.depthClearValue = 1.0f;
@@ -1767,6 +1771,7 @@ void BeginRenderpassEx(DescribedRenderpass *renderPass) {
     renderPassDesc.depthStencilAttachment = &depthAttachment;
 
     renderPass->rpEncoder = wgpuCommandEncoderBeginRenderPass((WGPUCommandEncoder)renderPass->cmdEncoder, &renderPassDesc);
+    renderPass->colorAttachmentState = GetAttachmentState(topOfStack);
     g_renderstate.activeRenderpass = renderPass;
 }
 
@@ -2015,7 +2020,7 @@ WGPURenderPipeline createSingleRenderPipe(const ModifiablePipelineState* mst,
     WGPURenderPipelineDescriptor pipelineDesc  = {0};
 
     const RenderSettings* settings = &mst->settings;
-    pipelineDesc.multisample.count = settings->sampleCount ? settings->sampleCount : 1;
+    pipelineDesc.multisample.count = mst->colorAttachmentState.sampleCount;
     pipelineDesc.multisample.mask = 0xFFFFFFFF;
     pipelineDesc.multisample.alphaToCoverageEnabled = false;
     pipelineDesc.layout = (WGPUPipelineLayout)pllayout->layout;
@@ -2023,6 +2028,7 @@ WGPURenderPipeline createSingleRenderPipe(const ModifiablePipelineState* mst,
     WGPUVertexState vertexState  = {0};
     WGPUFragmentState fragmentState  = {0};
     WGPUBlendState blendState  = {0};
+    
 
     vertexState.module = (WGPUShaderModule)shaderModule->stages[RGShaderStageEnum_Vertex].module;
 
@@ -2070,7 +2076,7 @@ WGPURenderPipeline createSingleRenderPipe(const ModifiablePipelineState* mst,
     blendState.alpha.operation = RG_to_WGPU_BlendOperation(settings->blendState.alpha.operation);
 
     const WGPUColorTargetState colorTarget = {
-        .format = toWGPUPixelFormat(g_renderstate.frameBufferFormat),
+        .format = toWGPUPixelFormat(mst->colorAttachmentState.attachmentFormats[0]),
         .blend = &blendState,
         .writeMask = WGPUColorWriteMask_All,
     };
@@ -2177,7 +2183,9 @@ RGAPI Shader LoadPipelineFromModule(DescribedShaderModule mod, const AttributeAn
     ret->shaderModule = mod;
     ret->state.colorAttachmentState.colorAttachmentCount = mod.reflectionInfo.attributes.attachmentCount;
 
-    for(uint32_t i = 0; i < MAX_COLOR_ATTACHMENTS;i++) ret->state.colorAttachmentState.attachmentFormats[i] = PIXELFORMAT_UNCOMPRESSED_B8G8R8A8;
+    for(uint32_t i = 0; i < MAX_COLOR_ATTACHMENTS;i++){
+        ret->state.colorAttachmentState.attachmentFormats[i] = PIXELFORMAT_UNCOMPRESSED_B8G8R8A8;
+    }
 
     const WGPUBindGroupLayout bgls[1] = {ret->bglayout.layout};
     const WGPUPipelineLayoutDescriptor pldesc = {

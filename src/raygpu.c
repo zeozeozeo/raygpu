@@ -602,10 +602,8 @@ DescribedShaderModule LoadShaderModule(ShaderSources sources){
  * @return false 
  */
 static inline bool RenderSettingsCompatible(const ModifiablePipelineState* state, RenderSettings settings2){
-    return state->settings.sampleCount == settings2.sampleCount &&
-           state->settings.depthTest == settings2.depthTest;
+    return state->settings.depthTest == settings2.depthTest;
 }
-
 RGAPI void BeginShaderMode(Shader shader){
     drawCurrentBatch();
     ShaderImpl* impl = GetShaderImpl(shader);
@@ -2947,15 +2945,16 @@ uint32_t GetFPS(void) {
     return (uint32_t)r;
 }
 
-
+RenderSettings GetCurrentSettings(){
+    return g_renderstate.currentSettings;
+}
 RenderSettings GetDefaultSettings(){
-    RenderSettings ret = {
+    const RenderSettings ret = {
         .lineWidth = 1,
         .faceCull = 1,
         .frontFace = RGFrontFace_CCW,
         .depthTest = 1,
         .depthCompare = RGCompareFunction_LessEqual,
-        .sampleCount = (g_renderstate.windowFlags & FLAG_MSAA_4X_HINT) ? 4 : 1,
         .blendState = {
             .alpha = {
                 .srcFactor = RGBlendFactor_One,

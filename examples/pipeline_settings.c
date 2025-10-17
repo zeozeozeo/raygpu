@@ -1,24 +1,24 @@
 #include <raygpu.h>
 
-int main(void){
-    //SetConfigFlags(FLAG_VSYNC_HINT);
-    InitWindow(1280, 720, "Pipes");
+DescribedSampler sampler;
+Shader depthless;
+RenderTexture multisampled_rt;
 
-    RenderSettings settings = GetDefaultSettings();
-    settings.sampleCount = 4;
-    //DescribedPipeline* depthless = ClonePipelineWithSettings(DefaultPipeline(), settings);
-    RenderTexture multisampled_rt = LoadRenderTextureEx(640, 720,WGPUTextureFormat_BGRA8Unorm, 4);
+void setup(){
+    sampler = LoadSampler(TEXTURE_WRAP_REPEAT, TEXTURE_FILTER_BILINEAR);
+    depthless = LoadShader(NULL, NULL);
+    multisampled_rt = LoadRenderTextureEx(640, 720, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8, 4, 1);
+    SetShaderSampler(depthless, 2, sampler);
     
-    while(!WindowShouldClose()){
-
-        
-
-        BeginDrawing();
+}
+void render(){
+    BeginDrawing();
         ClearBackground(BLANK);
 
         BeginTextureMode(multisampled_rt);
         ClearBackground(BLANK);
-        BeginPipelineMode(depthless);
+        BeginShaderMode(depthless);
+        
         DrawCircle(GetMouseX(), GetMouseY(), 50.0f, WHITE);
         DrawTriangle(
             (Vector2){GetMousePosition().x, GetMousePosition().y + 100}, 
@@ -26,7 +26,7 @@ int main(void){
             (Vector2){GetMousePosition().x + 30, GetMousePosition().y + 300}, 
             GREEN
         );
-        EndPipelineMode();
+        EndShaderMode();
         EndTextureMode();
 
 
@@ -42,6 +42,15 @@ int main(void){
         DrawText("MSAA On", 5, 5, 30, GREEN);
         DrawText("MSAA Off", 645, 5, 30, GREEN);
         DrawFPS(5, 70);
-        EndDrawing();
-    }
+    EndDrawing();
+}
+int main(void){
+    ProgramInfo info = {
+        .windowTitle = "Multisampled Rendertexture Example",
+        .windowWidth = 1280,
+        .windowHeight = 720,
+        .setupFunction = setup,
+        .renderFunction = render,
+    };
+    InitProgram(info);
 }

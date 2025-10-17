@@ -3,12 +3,14 @@
 #define CONFIG_H_INCLUDED
 
 #ifdef __EMSCRIPTEN__
-    #if !defined (SUPPORT_WGSL_PARSER) && !defined(SUPPORT_WGPU_BACKEND) && !defined(SUPPORT_GLFW)
-        #warning None of {SUPPORT_WGSL_PARSER, SUPPORT_WGPU_BACKEND, SUPPORT_GLFW} is defined
+    #if !defined (SUPPORT_WGSL_PARSER) && !defined(SUPPORT_WGPU_BACKEND)
+        #warning None of {SUPPORT_WGSL_PARSER, SUPPORT_WGPU_BACKEND} is defined
         #warning Defining them all to 1
         #define SUPPORT_WGSL_PARSER 1
         #define SUPPORT_WGPU_BACKEND 1
-        #define SUPPORT_GLFW 1
+    #endif
+    #if !defined(SUPPORT_GLFW) && !defined(SUPPORT_SDL3)
+        #define SUPPORT_SDL3 1
     #endif
 #endif
 

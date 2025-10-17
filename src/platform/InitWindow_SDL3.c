@@ -316,14 +316,15 @@ int GetMonitorHeight_SDL3(cwoid){
     return mode->h;
 }
 
-void ResizeCallback(SDL_Window* window, int width, int height){
+void ResizeCallback_SDL3(SDL_Window* window, int width, int height){
+    RGWindowImpl* rgwindow = CreatedWindowMap_get(&g_renderstate.createdSubwindows, window);
 
     //TRACELOG(LOG_INFO, "SDL3's ResizeCallback called with %d x %d", width, height);
-    ResizeSurface(&CreatedWindowMap_get(&g_renderstate.createdSubwindows, window)->surface, width, height);
+    ResizeSurface(&rgwindow->surface, (int)(width * rgwindow->scaleFactor), (int)(height * rgwindow->scaleFactor));
     if((void*)window == (void*)g_renderstate.window){
-        g_renderstate.mainWindowRenderTarget = CreatedWindowMap_get(&g_renderstate.createdSubwindows, window)->surface.renderTarget;
+        g_renderstate.mainWindowRenderTarget = rgwindow->surface.renderTarget;
     }
-    Matrix newcamera = ScreenMatrix(width, height);
+    Matrix newcamera = ScreenMatrix((int)(width * rgwindow->scaleFactor), (int)(height * rgwindow->scaleFactor));
 }
 
 static KeyboardKey ConvertScancodeToKey(SDL_Scancode sdlScancode){
@@ -391,7 +392,7 @@ RGAPI void PollEvents_SDL3() {
             SDL_Window *window = SDL_GetWindowFromID(event.window.windowID);
             int newWidth = event.window.data1;
             int newHeight = event.window.data2;
-            ResizeCallback(window, newWidth, newHeight);
+            ResizeCallback_SDL3(window, newWidth, newHeight);
         } break;
         case SDL_EVENT_FINGER_MOTION:{
             SDL_Window* lastTouched = SDL_GetWindowFromID(event.tfinger.windowID);

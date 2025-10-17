@@ -40,10 +40,10 @@ float calculateScrollScale(int deltaMode) {
 #endif
 void setupGLFWCallbacks(GLFWwindow* window);
 
-void ResizeCallback(GLFWwindow* window, int width, int height){
+void ResizeCallback_GLFW(GLFWwindow* window, int width, int height){
     
     TRACELOG(LOG_INFO, "GLFW's ResizeCallback called with %d x %d", width, height);
-
+    RGWindowImpl* rgwindow = CreatedWindowMap_get(&g_renderstate.createdSubwindows, window);
     if (width == 0 || height == 0) {
         g_renderstate.minimized = true;
         return;
@@ -51,11 +51,12 @@ void ResizeCallback(GLFWwindow* window, int width, int height){
     else {
         //emscripten_set_canvas_element_size("#canvas", width, height);
         //#ifndef __EMSCRIPTEN__
-        ResizeSurface(&CreatedWindowMap_get(&g_renderstate.createdSubwindows, window)->surface, width, height);
+        printf("Scale factor: %f\n", rgwindow->scaleFactor);
+        ResizeSurface(&rgwindow->surface, (int)(width * rgwindow->scaleFactor), (int)(height * rgwindow->scaleFactor));
         if((void*)window == (void*)g_renderstate.window){
-            g_renderstate.mainWindowRenderTarget = CreatedWindowMap_get(&g_renderstate.createdSubwindows, window)->surface.renderTarget;
+            g_renderstate.mainWindowRenderTarget = rgwindow->surface.renderTarget;
         }
-        Matrix newcamera = ScreenMatrix(width, height);
+        Matrix newcamera = ScreenMatrix((int)(width * rgwindow->scaleFactor), (int)(height * rgwindow->scaleFactor));
         g_renderstate.minimized = false;
         //#endif
     }
@@ -73,7 +74,7 @@ EM_BOOL EmscriptenResizeCallback(int eventType, const EmscriptenUiEvent *uiEvent
     //printf("%d, %d\n", uiEvent->documentBodyClientWidth, uiEvent->documentBodyClientHeight);
     int width, height;
     emscripten_get_canvas_element_size("#canvas", &width, &height);
-    ResizeCallback(g_renderstate.window, width, height);
+    ResizeCallback_GLFW(g_renderstate.window, width, height);
     fflush(stdout);
     
     return EM_TRUE;
@@ -193,7 +194,7 @@ static void CharCallback_glfw_tp(GLFWwindow* w, unsigned int cp){
     CharCallback((void*)w, cp);
 }
 void setupGLFWCallbacks(GLFWwindow* window){
-    glfwSetWindowSizeCallback(window, ResizeCallback);
+    glfwSetWindowSizeCallback(window, ResizeCallback_GLFW);
     glfwSetKeyCallback(window, glfwKeyCallback);
     glfwSetCursorPosCallback(window, cpcallback);
     glfwSetCharCallback(window, CharCallback_glfw_tp);
@@ -448,6 +449,7 @@ SubWindow InitWindow_GLFW(int width, int height, const char* title){
     if (!glfwInit()) {
         abort();
     }
+    glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
 
     GLFWmonitor* mon = NULL;
     glfwSetErrorCallback(glfw_e_c_);
@@ -484,9 +486,30 @@ SubWindow InitWindow_GLFW(int width, int height, const char* title){
     
     CreatedWindowMap_get(&g_renderstate.createdSubwindows,ret->handle)->input_state = CLITERAL(window_input_state){0};
     setupGLFWCallbacks((GLFWwindow*)ret->handle);
+    #ifndef __EMSCRIPTEN__
     float xscale, yscale;
     glfwGetWindowContentScale(window, &xscale, &yscale);
-    //ret->scaleFactor = 2;
+    printf("Setting %f\n", xscale);
+    const char* platform = NULL;
+    switch(glfwGetPlatform()){
+        case GLFW_PLATFORM_WAYLAND: 
+            platform = "Wayland";
+        break;
+        case GLFW_PLATFORM_X11: 
+            platform = "X11";
+        break;
+        case GLFW_PLATFORM_WIN32: 
+            platform = "Win32";
+        break;
+        case GLFW_PLATFORM_COCOA: 
+            platform = "Cocoa";
+        break;
+        default:
+        platform = "? unknown platform ?";
+    }
+    printf("On platform %s\n", platform);
+    ret->scaleFactor = xscale;
+    #endif
     return ret;
 }
 SubWindow OpenSubWindow_GLFW(int width, int height, const char* title){

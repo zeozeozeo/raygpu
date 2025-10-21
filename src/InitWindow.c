@@ -398,9 +398,9 @@ void* InitWindowEx_ContinuationPoint(InitContext_Impl _ctx){
     return NULL;
 }
 #if defined(__EMSCRIPTEN__) && !defined(ASSUME_EM_ASYNCIFY)
-    void PLEASE_READ_THE_BUILD_INSTRUCTIONS_FOR_WEB_ON_GITHUB___YOU_CANT_USE_REGULAR_InitWindow_WITHOUT_ASYNCIFY(SetupFunction x, RenderFunction y);
+    void PLEASE_READ_THE_BUILD_INSTRUCTIONS_FOR_WEB_ON_GITHUB___YOU_CANT_USE_REGULAR_InitWindow_WITHOUT_ASYNCIFY___USE_INITPROGRAM_OR_ASYNCIFY(SetupFunction x, RenderFunction y);
 #else
-    static void PLEASE_READ_THE_BUILD_INSTRUCTIONS_FOR_WEB_ON_GITHUB___YOU_CANT_USE_REGULAR_InitWindow_WITHOUT_ASYNCIFY(SetupFunction x, RenderFunction y){(void)x;(void)y;}
+    static void PLEASE_READ_THE_BUILD_INSTRUCTIONS_FOR_WEB_ON_GITHUB___YOU_CANT_USE_REGULAR_InitWindow_WITHOUT_ASYNCIFY___USE_INITPROGRAM_OR_ASYNCIFY(SetupFunction x, RenderFunction y){(void)x;(void)y;}
 #endif
 
 
@@ -410,7 +410,7 @@ RGAPI void InitWindow(int width, int height, const char* title){
         .windowTitle = title,
         .windowWidth = width,
         .windowHeight = height,
-        .finalContinuationPoint = PLEASE_READ_THE_BUILD_INSTRUCTIONS_FOR_WEB_ON_GITHUB___YOU_CANT_USE_REGULAR_InitWindow_WITHOUT_ASYNCIFY,
+        .finalContinuationPoint = PLEASE_READ_THE_BUILD_INSTRUCTIONS_FOR_WEB_ON_GITHUB___YOU_CANT_USE_REGULAR_InitWindow_WITHOUT_ASYNCIFY___USE_INITPROGRAM_OR_ASYNCIFY,
     };
 
     InitWindowEx(ctx);
@@ -505,7 +505,7 @@ SubWindow OpenSubWindow(int width, int height, const char* title){
     void* wgpu_or_wgpu_surface = CreateSurfaceForWindow(createdWindow);
     #if SUPPORT_WGPU_BACKEND == 1 || SUPPORT_VULKAN_BACKEND == 1
     WGPUSurface wSurface = (WGPUSurface)wgpu_or_wgpu_surface;
-    CreatedWindowMap_get(&g_renderstate.createdSubwindows, createdWindow->handle)->surface = CompleteSurface(wSurface, width, height);
+    CreatedWindowMap_get(&g_renderstate.createdSubwindows, createdWindow->handle)->surface = CompleteSurface(wSurface, (int)(width * createdWindow->scaleFactor), (int)(height * createdWindow->scaleFactor));
     #else
     WGPUSurface vSurface = (WGPUSurface)wgpu_or_wgpu_surface;
     WGPUSurfaceConfiguration config{};

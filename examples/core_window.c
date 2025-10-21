@@ -9,8 +9,12 @@ const char title[] = "Vulkan Window";
 const char text[] = "Hello WebGPU enjoyer";
 const char title[] = "WebGPU Window";
 #endif
-SubWindow sdlwin;
-void mainloop(void){
+
+void setup(void){
+
+}
+
+void render(void){
     BeginDrawing();
     ClearBackground(DARKGRAY);
     int fontsize = GetScreenWidth() < GetScreenHeight() ? GetScreenWidth() : GetScreenHeight();
@@ -45,19 +49,14 @@ void mainloop(void){
     if((GetFrameCount() & 0x7ff) == 0){
         printf("FPS: %u\n", GetFPS());
     }
-    
 }
 int main(void){
-    RequestAdapterType(SOFTWARE_RENDERER);
-    //SetConfigFlags(FLAG_VSYNC_LOWLATENCY_HINT);
-    InitWindow(800, 600, title);
-
-    #ifndef __EMSCRIPTEN__
-    while(!WindowShouldClose()){
-        mainloop();
-    }
-    
-    #else
-    emscripten_set_main_loop(mainloop, 0, 0);
-    #endif
+    ProgramInfo progInfo = {
+        .windowTitle = "Basic window",
+        .windowWidth = 900,
+        .windowHeight = 650,
+        .setupFunction = setup,
+        .renderFunction = render
+    };
+    InitProgram(progInfo);
 }

@@ -479,7 +479,7 @@ DescribedBindGroupLayout LoadBindGroupLayout(const ResourceTypeDescriptor *unifo
     return ret;
 }
 
-RGAPI FullSurface CompleteSurface(void *nsurface, int width, int height) {
+RGAPI FullSurface CompleteSurface(void *nsurface, int widthInPixels, int heightInPixels) {
     FullSurface ret = {0};
     ret.surface = (WGPUSurface)nsurface;
     negotiateSurfaceFormatAndPresentMode(nsurface);
@@ -525,8 +525,8 @@ RGAPI FullSurface CompleteSurface(void *nsurface, int width, int height) {
         .device = (WGPUDevice)GetDevice(),
         .format = toWGPUPixelFormat(format),
         .usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc,
-        .width = (uint32_t)width,
-        .height = (uint32_t)height,
+        .width = (uint32_t)widthInPixels,
+        .height = (uint32_t)heightInPixels,
         .viewFormatCount = 1,
         .viewFormats = &config.format,
         .alphaMode = WGPUCompositeAlphaMode_Opaque,
@@ -538,7 +538,7 @@ RGAPI FullSurface CompleteSurface(void *nsurface, int width, int height) {
     ret.height = config.height;
     ret.format = format;
 
-    ret.renderTarget = LoadRenderTexture(width, height);
+    ret.renderTarget = LoadRenderTexture(widthInPixels, heightInPixels);
     wgpuSurfaceConfigure((WGPUSurface)ret.surface, &config);
     return ret;
 }
@@ -1462,8 +1462,8 @@ Texture2DArray LoadTextureArray(uint32_t width, uint32_t height, uint32_t layerC
         .viewFormatCount = 1,
         .viewFormats = &tDesc.format,
     };
-    assert(tDesc.size.width > 0);
-    assert(tDesc.size.height > 0);
+    rassert(tDesc.size.width > 0, "Zero is not permitted as a texture extent");
+    rassert(tDesc.size.height > 0, "Zero is not permitted as a texture extent");
     const WGPUTextureViewDescriptor vDesc = {
         .format = tDesc.format,
         .dimension = WGPUTextureViewDimension_2DArray,
@@ -1921,12 +1921,11 @@ void EndRenderpassPro(DescribedRenderpass *rp, bool renderTexture) { EndRenderpa
 RenderTexture LoadRenderTexture(uint32_t width, uint32_t height) {
     RenderTexture ret = {
         .texture = LoadTextureEx(width, height, g_renderstate.frameBufferFormat, true),
-            .colorMultisample = {0},
-            .depth = LoadTexturePro(width, height, PIXELFORMAT_DEPTH_32_FLOAT, WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc, (g_renderstate.windowFlags & FLAG_MSAA_4X_HINT) ? 4 : 1, 1)
+        .colorMultisample = {0},
+        .depth = LoadTexturePro(width, height, PIXELFORMAT_DEPTH_32_FLOAT, WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc, (g_renderstate.windowFlags & FLAG_MSAA_4X_HINT) ? 4 : 1, 1)
     };
     if (g_renderstate.windowFlags & FLAG_MSAA_4X_HINT) {
-        ret.colorMultisample = LoadTexturePro(
-            width, height, g_renderstate.frameBufferFormat, WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc, 4, 1);
+        ret.colorMultisample = LoadTexturePro(width, height, g_renderstate.frameBufferFormat, WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc, 4, 1);
     }
     ret.colorAttachmentCount = 1;
     return ret;
@@ -2105,7 +2104,7 @@ WGPURenderPipeline createSingleRenderPipe(const ModifiablePipelineState* mst,
 
     pipelineDesc.primitive.frontFace = RG_to_WGPU_FrontFace(settings->frontFace);
     pipelineDesc.primitive.cullMode = settings->faceCull ? WGPUCullMode_Back : WGPUCullMode_None;
-    //pipelineDesc.primitive.cullMode = WGPUCullMode_None;
+    pipelineDesc.primitive.cullMode = WGPUCullMode_None;
     switch (mst->primitiveType) {
         case RL_LINES:
             pipelineDesc.primitive.topology = WGPUPrimitiveTopology_LineList;break;

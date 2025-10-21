@@ -429,8 +429,13 @@ WGPUSurface CreateSurfaceForWindow_GLFW(void* windowHandle){
     #else
     float xscale, yscale;
     glfwGetWindowContentScale((GLFWwindow*)windowHandle, &xscale, &yscale);
-    CreatedWindowMap_get(&g_renderstate.createdSubwindows, windowHandle)->scaleFactor = xscale;
+    TRACELOG(LOG_WARNING, "%f", xscale);
+    
     WGPUSurface wsurfaceHandle = glfwCreateWindowWGPUSurface((WGPUInstance)GetInstance(), (GLFWwindow*)windowHandle);
+
+    
+    CreatedWindowMap_get(&g_renderstate.createdSubwindows, windowHandle)->scaleFactor = xscale;
+    
     return wsurfaceHandle;
     #endif
 }
@@ -524,6 +529,9 @@ SubWindow OpenSubWindow_GLFW(int width, int height, const char* title){
     CreatedWindowMap_get(&g_renderstate.createdSubwindows,ret->handle)->input_state = CLITERAL(window_input_state){0};
     setupGLFWCallbacks((GLFWwindow*)ret->handle);
     #endif
+    float xscale, yscale;
+    glfwGetWindowContentScale(ret->handle, &xscale, &yscale);
+    ret->scaleFactor = xscale;
     return ret;
 }
 bool WindowShouldClose_GLFW(GLFWwindow* win){

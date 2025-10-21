@@ -784,7 +784,9 @@ static inline Matrix MatrixOrtho(double left, double right, double bottom, doubl
 RGAPI void rlTranslatef(float x, float y, float z){
     Matrix* mat = GetMatrixPtr();
     Matrix matTranslation = MatrixTranslate(x, y, z);
-    *mat = MatrixMultiply(matTranslation, *mat);
+    *mat = MatrixMultiply(*mat, matTranslation);
+    SetMatrix(*mat);
+    SetUniformBufferData(0, mat, sizeof(Matrix));
 }
 
 RGAPI void rlRotatef(float angle, float x, float y, float z){
@@ -851,6 +853,9 @@ RGAPI double rlGetCullDistanceFar(void){
 
 RGAPI void rlLoadIdentity(void){
     LoadIdentity();
+    Matrix mat = MatrixBufferPair_stack_peek(&g_renderstate.matrixStack)->matrix;
+    SetMatrix(mat);
+    SetUniformBufferData(0, &mat, sizeof(Matrix));
 }
 RGAPI void rlPushMatrix(void) {
     MatrixBufferPair* currentTop = MatrixBufferPair_stack_peek(&g_renderstate.matrixStack);
@@ -862,6 +867,7 @@ RGAPI void rlPushMatrix(void) {
 }
 RGAPI void rlPopMatrix(void) {
     if (g_renderstate.matrixStack.current_pos > 1) {
+        drawCurrentBatch();
         MatrixBufferPair_stack_pop(&g_renderstate.matrixStack);
 
         MatrixBufferPair* newTop = MatrixBufferPair_stack_peek(&g_renderstate.matrixStack);

@@ -3,10 +3,13 @@
 void mainloop(){
     BeginDrawing();
     ClearBackground(DARKBLUE);
-    DrawRectangle(100,100,100,100,RED);
-    drawCurrentBatch();
-    rlScalef(100, 0, 0);
-    DrawRectangle(100,100,100,10,GREEN);
+    //DrawRectangle(100,100,100,100,RED);
+    //drawCurrentBatch();
+    //rlScalef(100, 0, 0);
+    rlPushMatrix();
+    rlTranslatef(200,0,0);
+    DrawRectangle(200,200,200,200,GREEN);
+    rlPopMatrix();
     EndDrawing();
 }
 void setup(){
@@ -15,8 +18,8 @@ void setup(){
 
 int main(){
     ProgramInfo prog = {
-        .windowWidth = 1600,
-        .windowHeight = 900,
+        .windowWidth = 800,
+        .windowHeight = 600,
         .setupFunction = setup,
         .renderFunction = mainloop,
     };

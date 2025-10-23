@@ -110,7 +110,7 @@ int main(){
 
 Compiling a raygpu program for Web is as easy as running 
 ```bash
-emcc --use-port=emdawnwebgpu examples/core_shapes.c src/*.c -I include -sUSE_GLFW=3 -sALLOW_MEMORY_GROWTH=1
+emcc --use-port=emdawnwebgpu examples/core_shapes.c src/*.c -I amalgamation/SPIRV-Reflect/ -I include -sUSE_SDL=3 -sALLOW_MEMORY_GROWTH=1 -sSINGLE_FILE -o core_shapes.html
 ```
 Make sure you have a recent version of emscripten installed.
 ___

@@ -1,4 +1,5 @@
 #include <raygpu.h>
+#define MSF_GIF_IMPL
 #include <external/msf_gif.h>
 
 int main(){

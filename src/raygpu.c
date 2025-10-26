@@ -485,6 +485,7 @@ Matrix* GetMatrixPtr(void) {
 }
 
 void SetMatrix(Matrix m) {
+    drawCurrentBatch();
     g_renderstate.matrixStack.data[g_renderstate.matrixStack.current_pos - 1].matrix = m;
 }
 
@@ -793,12 +794,16 @@ RGAPI void rlRotatef(float angle, float x, float y, float z){
     Matrix* mat = GetMatrixPtr();
     Matrix matRotation = MatrixRotate(CLITERAL(Vector3){ x, y, z }, (float)(angle * DEG2RAD));
     *mat = MatrixMultiply(matRotation, *mat);
+    SetMatrix(*mat);
+    SetUniformBufferData(0, mat, sizeof(Matrix));
 }
 
 RGAPI void rlScalef(float x, float y, float z){
     Matrix* mat = GetMatrixPtr();
     Matrix matScaling = MatrixScale(x, y, z);
-    *mat = MatrixMultiply(matScaling, *mat);
+    *mat = MatrixMultiply(*mat, matScaling);
+    SetMatrix(*mat);
+    SetUniformBufferData(0, mat, sizeof(Matrix));
 }
 
 RGAPI void rlMultMatrixf(const float *matf){

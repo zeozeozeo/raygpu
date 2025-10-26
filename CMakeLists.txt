@@ -80,9 +80,11 @@ function(cst_bundle_libraries output_target)
       list(APPEND all_objects $<TARGET_OBJECTS:${dependency}>)
     endif()
   endforeach()
-
-  add_library(${output_target} STATIC ${all_objects})
-
+  if(RAYGPU_BUILD_SHARED_LIBRARY)
+    add_library(${output_target} SHARED ${all_objects})
+  else()
+    add_library(${output_target} STATIC ${all_objects})
+  endif()
   add_dependencies(${output_target} ${ARGN})
 
 endfunction()
@@ -523,8 +525,9 @@ endif()
 
 
 target_link_libraries(raygpu INTERFACE raygpu_core)
-
-
+if(RAYGPU_BUILD_SHARED_LIBRARY AND APPLE)
+  target_link_libraries(raygpu PUBLIC "-framework Cocoa" "-framework IOKit" "-framework Metal" "-framework QuartzCore")
+endif()
 
 if(DEFINED ENV{HOMEBREW_PREFIX})
     # Construct the RPATH using the environment variable

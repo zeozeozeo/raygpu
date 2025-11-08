@@ -41,7 +41,7 @@ void mainloop(){
     //DrawTexturePro(groundTruth.color, Rectangle(0,0, groundTruth.color.width, groundTruth.color.height), Rectangle(0,0,GetScreenWidth(), GetScreenHeight()), Vector2{0,0}, 0.0, WHITE);
     
     BeginMode3D(cam);
-    SetBindgroupTextureView(&GetActivePipeline()->bindGroup, 1, (WGVKTextureView)(drawMipMapped ? mipmappedTexture.view : mipmappedTexture.mipViews[0]));
+    SetTextureView(1, (WGPUTextureView)(drawMipMapped ? mipmappedTexture.view : mipmappedTexture.mipViews[0]));
     //UseTexture(mipmappedTexture);
     rlBegin(RL_QUADS);
     rlColor3f(1.0f, 1.0f, 1.0f);
@@ -86,7 +86,7 @@ int main(){
     //firstPassPipeline = LoadComputePipeline(computeCode);
     mipmappedTexture = LoadTexturePro(
         1000, 1000,
-        RGBA8, TextureUsage_StorageBinding | TextureUsage_CopySrc | TextureUsage_CopyDst | TextureUsage_TextureBinding,
+        PIXELFORMAT_UNCOMPRESSED_R8G8B8A8, RGTextureUsage_StorageBinding | RGTextureUsage_CopySrc | RGTextureUsage_CopyDst | RGTextureUsage_TextureBinding,
         1,
         10
     );
@@ -101,7 +101,7 @@ int main(){
         .fovy = 60.0f
     };
 
-    smp = LoadSamplerEx(clampToEdge, filter_linear, filter_linear, 1000.0f);
+    smp = LoadSamplerEx(TEXTURE_WRAP_CLAMP, TEXTURE_FILTER_BILINEAR, TEXTURE_FILTER_BILINEAR, 1000.0f);
     SetSampler(2, smp);
     
     //Image exp = LoadImageFromTextureEx(groundTruth.color.id, 0);

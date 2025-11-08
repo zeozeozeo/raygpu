@@ -1695,6 +1695,7 @@ RGAPI void SetShaderStorageBufferData (Shader shader, uint32_t index, const void
  * i.e. the default pipeline or the one set with BeginPipelineMode
  */
 RGAPI void SetTexture (uint32_t index, Texture tex);
+RGAPI void SetTextureView (uint32_t index, WGPUTextureView tex);
 RGAPI void SetSampler (uint32_t index, DescribedSampler sampler);
 RGAPI void SetUniformBuffer (uint32_t index, DescribedBuffer* buffer);
 RGAPI void SetStorageBuffer (uint32_t index, DescribedBuffer* buffer);

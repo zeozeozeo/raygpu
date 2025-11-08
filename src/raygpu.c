@@ -2194,6 +2194,10 @@ Shader GetActiveShader(){
 void SetTexture                   (uint32_t index, Texture tex){
     SetShaderTexture(GetActiveShader(), index, tex);
 }
+RGAPI void SetTextureView (uint32_t index, WGPUTextureView tex){
+    ShaderImpl* sh = allocatedShaderIDs_shc + GetActiveShader().id;
+    SetBindgroupTextureView(&sh->bindGroup, index, tex);
+}
 void SetSampler                   (uint32_t index, DescribedSampler sampler){
     SetShaderSampler (GetActiveShader(), index, sampler);
 }

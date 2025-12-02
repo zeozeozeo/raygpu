@@ -897,22 +897,31 @@ void RequestBackend(BackendType backend) {
     switch (backend) {
     case BackendType_Undefined:
         requestedBackend = WGPUBackendType_Undefined;
+        break;
     case BackendType_Null:
         requestedBackend = WGPUBackendType_Null;
+        break;
     case BackendType_WebGPU:
         requestedBackend = WGPUBackendType_WebGPU;
+        break;
     case BackendType_D3D11:
         requestedBackend = WGPUBackendType_D3D11;
+        break;
     case BackendType_D3D12:
         requestedBackend = WGPUBackendType_D3D12;
+        break;
     case BackendType_Metal:
         requestedBackend = WGPUBackendType_Metal;
+        break;
     case BackendType_Vulkan:
         requestedBackend = WGPUBackendType_Vulkan;
+        break;
     case BackendType_OpenGL:
         requestedBackend = WGPUBackendType_OpenGL;
+        break;
     case BackendType_OpenGLES:
         requestedBackend = WGPUBackendType_OpenGLES;
+        break;
     default:
         abort();
     }

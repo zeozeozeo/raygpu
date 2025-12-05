@@ -68,63 +68,63 @@ RGAPI EntryPointSet                                           getEntryPointsWGSL
 #include "src/tint/lang/wgsl/ast/const.h"
 #include "src/tint/lang/wgsl/inspector/inspector.h"
 
-static inline WGPUVertexFormat ti_format_from(tint::inspector::ComponentType ct,
+static inline RGVertexFormat ti_format_from(tint::inspector::ComponentType ct,
                                               tint::inspector::CompositionType comp) {
     using CT = tint::inspector::ComponentType;
     using CP = tint::inspector::CompositionType;
     switch (ct) {
         case CT::kF32:
             switch (comp) {
-                case CP::kScalar: return WGPUVertexFormat_Float32;
-                case CP::kVec2:   return WGPUVertexFormat_Float32x2;
-                case CP::kVec3:   return WGPUVertexFormat_Float32x3;
-                case CP::kVec4:   return WGPUVertexFormat_Float32x4;
+                case CP::kScalar: return RGVertexFormat_Float32;
+                case CP::kVec2:   return RGVertexFormat_Float32x2;
+                case CP::kVec3:   return RGVertexFormat_Float32x3;
+                case CP::kVec4:   return RGVertexFormat_Float32x4;
                 default:          break;
             }
             break;
         case CT::kU32:
             switch (comp) {
-                case CP::kScalar: return WGPUVertexFormat_Uint32;
-                case CP::kVec2:   return WGPUVertexFormat_Uint32x2;
-                case CP::kVec3:   return WGPUVertexFormat_Uint32x3;
-                case CP::kVec4:   return WGPUVertexFormat_Uint32x4;
+                case CP::kScalar: return RGVertexFormat_Uint32;
+                case CP::kVec2:   return RGVertexFormat_Uint32x2;
+                case CP::kVec3:   return RGVertexFormat_Uint32x3;
+                case CP::kVec4:   return RGVertexFormat_Uint32x4;
                 default:          break;
             }
             break;
         case CT::kI32:
             switch (comp) {
-                case CP::kScalar: return WGPUVertexFormat_Sint32;
-                case CP::kVec2:   return WGPUVertexFormat_Sint32x2;
-                case CP::kVec3:   return WGPUVertexFormat_Sint32x3;
-                case CP::kVec4:   return WGPUVertexFormat_Sint32x4;
+                case CP::kScalar: return RGVertexFormat_Sint32;
+                case CP::kVec2:   return RGVertexFormat_Sint32x2;
+                case CP::kVec3:   return RGVertexFormat_Sint32x3;
+                case CP::kVec4:   return RGVertexFormat_Sint32x4;
                 default:          break;
             }
             break;
         case CT::kF16:
             switch (comp) {
-                case CP::kScalar: return WGPUVertexFormat_Float16;
-                case CP::kVec2:   return WGPUVertexFormat_Float16x2;
+                case CP::kScalar: return RGVertexFormat_Float16;
+                case CP::kVec2:   return RGVertexFormat_Float16x2;
                 case CP::kVec3:   /* not valid */ break;
-                case CP::kVec4:   return WGPUVertexFormat_Float16x4;
+                case CP::kVec4:   return RGVertexFormat_Float16x4;
                 default:          break;
             }
             break;
         default: break;
     }
-#ifdef WGPUVertexFormat_Undefined
-    return WGPUVertexFormat_Undefined;
+#ifdef RGVertexFormat_Undefined
+    return RGVertexFormat_Undefined;
 #else
-    return WGPUVertexFormat_Float32;
+    return RGVertexFormat_Float32;
 #endif
 }
 
-static inline WGPUShaderStageEnum ti_stage_to_enum(tint::inspector::PipelineStage st) {
+static inline RGShaderStageEnum ti_stage_to_enum(tint::inspector::PipelineStage st) {
     using PS = tint::inspector::PipelineStage;
     switch (st) {
-        case PS::kVertex:   return WGPUShaderStageEnum_Vertex;
-        case PS::kFragment: return WGPUShaderStageEnum_Fragment;
-        case PS::kCompute:  return WGPUShaderStageEnum_Compute;
-        default:            return WGPUShaderStageEnum_Vertex;
+        case PS::kVertex:   return RGShaderStageEnum_Vertex;
+        case PS::kFragment: return RGShaderStageEnum_Fragment;
+        case PS::kCompute:  return RGShaderStageEnum_Compute;
+        default:            return RGShaderStageEnum_Vertex;
     }
 }
 
@@ -139,27 +139,30 @@ static inline format_or_sample_type ti_parse_format(const std::string& s) {
 }
 
 static inline access_type ti_parse_access(const std::string& s) {
-    if (s == "read")        return readonly;
-    if (s == "write")       return writeonly;
-    if (s == "read_write")  return readwrite;
-    return readwrite;
+    if (s == "read")        return access_type_readonly;
+    if (s == "write")       return access_type_writeonly;
+    if (s == "read_write")  return access_type_readwrite;
+    return access_type_readwrite;
 }
 
-getEntryPointsWGSL
-getEntryPointsWGSL_Tint(const char* shaderSourceWGSL) {
-    std::vector<std::pair<WGPUShaderStageEnum,std::string>> out;
-    if (!shaderSourceWGSL) return out;
+EntryPointSet getEntryPointsWGSL_Tint(const char* shaderSourceWGSL) {
+    std::vector<std::pair<RGShaderStageEnum,std::string>> out;
+    if (!shaderSourceWGSL) return EntryPointSet{};
 
     tint::Source::File file("", shaderSourceWGSL);
     tint::Program prog = tint::wgsl::reader::Parse(&file);
-    if (!prog.IsValid()) return out;
+    if (!prog.IsValid()) return EntryPointSet{};
 
     tint::inspector::Inspector insp(prog);
     auto eps = insp.GetEntryPoints();
+    EntryPointSet ret{};
     for (auto& ep : eps) {
-        out.emplace_back(ti_stage_to_enum(ep.stage), ep.name);
+        char* insert = ret.names[ti_stage_to_enum(ep.stage)];
+        rassert(ep.name.size() <= MAX_SHADER_ENTRYPOINT_NAME_LENGTH, "Shader entry point name is too long: %s", ep.name.c_str());
+        memcpy(insert, ep.name.c_str(), std_min_u64(ep.name.size() + 1, MAX_SHADER_ENTRYPOINT_NAME_LENGTH));
     }
-    return out;
+    
+    return ret;
 }
 
 InOutAttributeInfo getAttributesWGSL_Tint(ShaderSources sources) {
@@ -196,16 +199,15 @@ InOutAttributeInfo getAttributesWGSL_Tint(ShaderSources sources) {
     return info;
 }
 
-std::unordered_map<std::string, ResourceTypeDescriptor>
-getBindingsWGSL_Tint(ShaderSources sources) {
+StringToUniformMap* getBindingsWGSL_Tint(ShaderSources sources) {
     std::unordered_map<std::string, ResourceTypeDescriptor> out;
-    if (sources.sourceCount == 0 || sources.sources[0].data == nullptr) return out;
+    if (sources.sourceCount == 0 || sources.sources[0].data == nullptr) return nullptr;
 
     const char* src = (const char*)sources.sources[0].data;
     tint::Source::File file("", src);
     tint::wgsl::reader::Options options{};
     tint::Program prog = tint::wgsl::reader::Parse(&file, options);
-    if (!prog.IsValid()) return out;
+    if (!prog.IsValid()) return nullptr;
 
     // Walk AST globals to classify bindings.
     for (auto* g : prog.AST().GlobalVariables()) {
@@ -296,13 +298,15 @@ getBindingsWGSL_Tint(ShaderSources sources) {
                         desc.access = ti_parse_access(acc->identifier->symbol.Name());
                     }
                 } else {
-                    desc.access = readwrite;
+                    desc.access = access_type_readwrite;
                 }
                 out.emplace(name, desc);
             }
         }
     }
-
+    StringToUniformMap* ret = (StringToUniformMap*)RL_CALLOC(1, sizeof(StringToUniformMap));
+    
+    TODO: flatten ret into out
     return out;
 }
 
@@ -332,9 +336,9 @@ DescribedShaderModule LoadShaderModuleWGSL(ShaderSources sources) {
 
         source.code = WGPUStringView{.data = (const char*)sources.sources[i].data, .length = sources.sources[i].sizeInBytes};
         WGPUShaderModule module = wgpuDeviceCreateShaderModule((WGPUDevice)GetDevice(), &mDesc);
-        WGPUShaderStage sourceStageMask = sources.sources[i].stageMask;
+        RGShaderStage sourceStageMask = sources.sources[i].stageMask;
         
-        for(uint32_t i = 0;i < WGPUShaderStageEnum_EnumCount;++i){
+        for(uint32_t i = 0;i < RGShaderStageEnum_EnumCount;++i){
             if(uint32_t(sourceStageMask) & (1u << i)){
                 ret.stages[i].module = module;
             }

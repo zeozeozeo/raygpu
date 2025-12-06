@@ -208,19 +208,16 @@ StringToUniformMap* getBindingsWGSL_Tint(ShaderSources sources) {
     tint::wgsl::reader::Options options{};
     tint::Program prog = tint::wgsl::reader::Parse(&file, options);
     if (!prog.IsValid()) return nullptr;
-
+    
     // Walk AST globals to classify bindings.
     for (auto* g : prog.AST().GlobalVariables()) {
         auto* var = g->As<tint::ast::Var>();
         if (!var) continue;
 
-        // Skip non-bindable address spaces quickly
-        if (!var->declared_address_space) continue;
-
+        
         ResourceTypeDescriptor desc{};
         std::string name = var->name->symbol.Name();
-
-        // Binding attribute
+        
         for (auto* attr : var->attributes) {
             if (auto* ba = attr->As<tint::ast::BindingAttribute>()) {
                 if (auto* il = ba->expr->As<tint::ast::IntLiteralExpression>())
@@ -228,12 +225,10 @@ StringToUniformMap* getBindingsWGSL_Tint(ShaderSources sources) {
             }
         }
 
-        // Type classification
         if (auto* ty_expr = var->type->As<tint::ast::IdentifierExpression>()) {
             auto* id = ty_expr->identifier;
             const std::string tname = id->symbol.Name();
 
-            // Textures and samplers
             if (tname.rfind("texture_storage_2d", 0) == 0 ||
                 tname.rfind("texture_storage_3d", 0) == 0) {
                 bool is2d = tname.rfind("texture_storage_2d", 0) == 0;
@@ -284,7 +279,6 @@ StringToUniformMap* getBindingsWGSL_Tint(ShaderSources sources) {
             }
         }
 
-        // Buffers via address space
         if (auto* as_expr = var->declared_address_space->As<tint::ast::IdentifierExpression>()) {
             const std::string as = as_expr->identifier->symbol.Name();
             if (as == "uniform") {
@@ -305,9 +299,13 @@ StringToUniformMap* getBindingsWGSL_Tint(ShaderSources sources) {
         }
     }
     StringToUniformMap* ret = (StringToUniformMap*)RL_CALLOC(1, sizeof(StringToUniformMap));
-    
-    TODO: flatten ret into out
-    return out;
+    for(const auto& [k, v] : out){
+        BindingIdentifier iden{};
+        iden.length = k.size();
+        std::memcpy(iden.name, k.c_str(), k.size());
+        StringToUniformMap_put(ret, iden, v);
+    }
+    return ret;
 }
 
 #endif // tint backend
@@ -321,49 +319,49 @@ StringToUniformMap* getBindingsWGSL_Tint(ShaderSources sources) {
 
 
 
-DescribedShaderModule LoadShaderModuleWGSL(ShaderSources sources) {
-    
-    DescribedShaderModule ret = {0};
-    #if SUPPORT_WGPU_BACKEND == 1 || SUPPORT_WGPU_BACKEND == 0
-
-    rassert(sources.language == sourceTypeWGSL, "Source language must be wgsl for this function");
-    
-    for(uint32_t i = 0;i < sources.sourceCount;i++){
-        WGPUShaderModuleDescriptor mDesc  = {0};
-        WGPUShaderSourceWGSL source  = {0};
-        mDesc.nextInChain = &source.chain;
-        source.chain.sType = WGPUSType_ShaderSourceWGSL;
-
-        source.code = WGPUStringView{.data = (const char*)sources.sources[i].data, .length = sources.sources[i].sizeInBytes};
-        WGPUShaderModule module = wgpuDeviceCreateShaderModule((WGPUDevice)GetDevice(), &mDesc);
-        RGShaderStage sourceStageMask = sources.sources[i].stageMask;
-        
-        for(uint32_t i = 0;i < RGShaderStageEnum_EnumCount;++i){
-            if(uint32_t(sourceStageMask) & (1u << i)){
-                ret.stages[i].module = module;
-            }
-        }
-        
-        EntryPointSet entryPoints = getEntryPointsWGSL((const char*)sources.sources[i].data);
-        for(uint32_t i = 0;i < 16;i++){
-            //rassert(entryPoints[i].second.size() < 15, "Entrypoint name must be shorter than 15 characters");
-            if(entryPoints.names[i][0] == '\0'){
-                continue;
-            }
-            char* dest = ret.reflectionInfo.ep[i].name;
-            memcpy(dest, entryPoints.names[i], MAX_SHADER_ENTRYPOINT_NAME_LENGTH + 1);
-        }
-    }
-    #else
-    ShaderSources spirvSources = wgsl_to_spirv(sources);
-    ret = LoadShaderModuleSPIRV(spirvSources);
-    #endif
-    ret.reflectionInfo.uniforms = callocnewpp(StringToUniformMap);
-    ret.reflectionInfo.attributes = CLITERAL(InOutAttributeInfo){0};
-    ret.reflectionInfo.uniforms = getBindings(sources);
-    ret.reflectionInfo.attributes = getAttributesWGSL(sources);
-    return ret;
-}
+//DescribedShaderModule LoadShaderModuleWGSL(ShaderSources sources) {
+//    
+//    DescribedShaderModule ret = {0};
+//    #if SUPPORT_WGPU_BACKEND == 1 || SUPPORT_WGPU_BACKEND == 0
+//
+//    rassert(sources.language == sourceTypeWGSL, "Source language must be wgsl for this function");
+//    
+//    for(uint32_t i = 0;i < sources.sourceCount;i++){
+//        WGPUShaderModuleDescriptor mDesc  = {0};
+//        WGPUShaderSourceWGSL source  = {0};
+//        mDesc.nextInChain = &source.chain;
+//        source.chain.sType = WGPUSType_ShaderSourceWGSL;
+//
+//        source.code = WGPUStringView{.data = (const char*)sources.sources[i].data, .length = sources.sources[i].sizeInBytes};
+//        WGPUShaderModule module = wgpuDeviceCreateShaderModule((WGPUDevice)GetDevice(), &mDesc);
+//        RGShaderStage sourceStageMask = sources.sources[i].stageMask;
+//        
+//        for(uint32_t i = 0;i < RGShaderStageEnum_EnumCount;++i){
+//            if(uint32_t(sourceStageMask) & (1u << i)){
+//                ret.stages[i].module = module;
+//            }
+//        }
+//        
+//        EntryPointSet entryPoints = getEntryPointsWGSL((const char*)sources.sources[i].data);
+//        for(uint32_t i = 0;i < 16;i++){
+//            //rassert(entryPoints[i].second.size() < 15, "Entrypoint name must be shorter than 15 characters");
+//            if(entryPoints.names[i][0] == '\0'){
+//                continue;
+//            }
+//            char* dest = ret.reflectionInfo.ep[i].name;
+//            memcpy(dest, entryPoints.names[i], MAX_SHADER_ENTRYPOINT_NAME_LENGTH + 1);
+//        }
+//    }
+//    #else
+//    ShaderSources spirvSources = wgsl_to_spirv(sources);
+//    ret = LoadShaderModuleSPIRV(spirvSources);
+//    #endif
+//    ret.reflectionInfo.uniforms = callocnewpp(StringToUniformMap);
+//    ret.reflectionInfo.attributes = CLITERAL(InOutAttributeInfo){0};
+//    ret.reflectionInfo.uniforms = getBindings(sources);
+//    ret.reflectionInfo.attributes = getAttributesWGSL(sources);
+//    return ret;
+//}
 
 
 

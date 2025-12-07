@@ -52,13 +52,9 @@ inline WGPUVertexFormat f32format(uint32_t s) {
     rg_unreachable();
 }
 void BindComputePipeline(DescribedComputePipeline *pipeline) {
+    g_activeComputePipeline = pipeline;
     wgpuComputePassEncoderSetPipeline((WGPUComputePassEncoder)g_renderstate.computepass.cpEncoder,
                                       (WGPUComputePipeline)pipeline->pipeline);
-    wgpuComputePassEncoderSetBindGroup((WGPUComputePassEncoder)g_renderstate.computepass.cpEncoder,
-                                       0,
-                                       (WGPUBindGroup)UpdateAndGetNativeBindGroup(&pipeline->bindGroup),
-                                       0,
-                                       0);
 }
 void CopyBufferToBuffer(DescribedBuffer *source, DescribedBuffer *dest, size_t count) {
     wgpuCommandEncoderCopyBufferToBuffer((WGPUCommandEncoder)g_renderstate.computepass.cmdEncoder,
@@ -120,9 +116,13 @@ void CopyTextureToTexture(Texture source, Texture dest) {
 }
 
 void DispatchCompute(uint32_t x, uint32_t y, uint32_t z) {
+    if(g_activeComputePipeline) {
+        ComputePassSetBindGroup(&g_renderstate.computepass, 0, &g_activeComputePipeline->bindGroup);
+    }
     wgpuComputePassEncoderDispatchWorkgroups((WGPUComputePassEncoder)g_renderstate.computepass.cpEncoder, x, y, z);
 }
 void ComputepassEndOnlyComputing(cwoid) {
+    g_activeComputePipeline = NULL;
     wgpuComputePassEncoderEnd((WGPUComputePassEncoder)g_renderstate.computepass.cpEncoder);
     g_renderstate.computepass.cpEncoder = NULL;
 }
@@ -197,6 +197,7 @@ RGAPI Texture3D LoadTexture3DPro(
     return ret;
 }
 void EndComputepassEx(DescribedComputepass *computePass) {
+    g_activeComputePipeline = NULL;
     if (computePass->cpEncoder) {
         wgpuComputePassEncoderEnd((WGPUComputePassEncoder)computePass->cpEncoder);
         wgpuComputePassEncoderRelease((WGPUComputePassEncoder)computePass->cpEncoder);

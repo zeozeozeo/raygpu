@@ -738,6 +738,7 @@ externcvar WGPUBuffer vbo_buf;
 externcvar VertexArray* renderBatchVAO;
 externcvar DescribedBuffer* renderBatchVBO;
 externcvar PrimitiveType current_drawmode;
+externcvar DescribedComputePipeline* g_activeComputePipeline;
 externcvar char telegrama_render1[];
 externcvar char telegrama_render2[];
 externcvar char telegrama_render3[];

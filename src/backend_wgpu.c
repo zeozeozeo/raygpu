@@ -2267,6 +2267,11 @@ LoadComputePipelineEx(const char *shaderCode, const ResourceTypeDescriptor *unif
     pldesc.bindGroupLayouts = (WGPUBindGroupLayout *)&ret->bglayout.layout;
     WGPUPipelineLayout playout = wgpuDeviceCreatePipelineLayout((WGPUDevice)GetDevice(), &pldesc);
     ret->shaderModule = LoadShaderModule(sources);
+    
+    if (ret->shaderModule.reflectionInfo.ep[RGShaderStageEnum_Compute].name[0] == '\0') {
+        TRACELOG(LOG_FATAL, "Failed to find Compute entry point in shader (Tint reflection failed).");
+    }
+    
     desc.compute.module = (WGPUShaderModule)ret->shaderModule.stages[RGShaderStageEnum_Compute].module;
 
     desc.compute.entryPoint = CLITERAL(WGPUStringView){ret->shaderModule.reflectionInfo.ep[RGShaderStageEnum_Compute].name, strlen(ret->shaderModule.reflectionInfo.ep[RGShaderStageEnum_Compute].name)};

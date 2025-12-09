@@ -29,7 +29,7 @@ endif()
 if(NOT MSVC AND NOT EMSCRIPTEN)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-    
+
     set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O3 -DNDEBUG -g")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -DNDEBUG -fno-exceptions -g")
 endif()
@@ -41,53 +41,53 @@ endif()
 
 
 function(cst_bundle_libraries output_target)
-  set(options "")
-  set(oneValueArgs TYPE)
-  set(multiValueArgs "")
-  cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-  
-  function(get_dependencies input_target)
-  get_target_property(alias ${input_target} ALIASED_TARGET)
-  if(TARGET ${alias})
-    set(input_target ${alias})
-  endif()
-  if(${input_target} IN_LIST all_dependencies)
-    return()
-  endif()
-  list(APPEND all_dependencies ${input_target})
-  get_target_property(link_libraries ${input_target} LINK_LIBRARIES)
-  foreach(dependency IN LISTS link_libraries)
-    if(TARGET ${dependency})
-    get_dependencies(${dependency})
+    set(options "")
+    set(oneValueArgs TYPE)
+    set(multiValueArgs "")
+    cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    function(get_dependencies input_target)
+        get_target_property(alias ${input_target} ALIASED_TARGET)
+        if(TARGET ${alias})
+            set(input_target ${alias})
+        endif()
+        if(${input_target} IN_LIST all_dependencies)
+            return()
+        endif()
+        list(APPEND all_dependencies ${input_target})
+        get_target_property(link_libraries ${input_target} LINK_LIBRARIES)
+        foreach(dependency IN LISTS link_libraries)
+            if(TARGET ${dependency})
+                get_dependencies(${dependency})
+            endif()
+        endforeach()
+        get_target_property(link_libraries ${input_target} INTERFACE_LINK_LIBRARIES)
+        foreach(dependency IN LISTS link_libraries)
+            if(TARGET ${dependency})
+                get_dependencies(${dependency})
+            endif()
+        endforeach()
+        set(all_dependencies ${all_dependencies} PARENT_SCOPE)
+    endfunction()
+    foreach(input_target IN LISTS ARG_UNPARSED_ARGUMENTS)
+        get_dependencies(${input_target})
+    endforeach()
+    foreach(dependency IN LISTS all_dependencies)
+        get_target_property(type ${dependency} TYPE)
+        if(${type} STREQUAL "STATIC_LIBRARY")
+            list(APPEND all_objects $<TARGET_OBJECTS:${dependency}>)
+        elseif(${type} STREQUAL "OBJECT_LIBRARY")
+            list(APPEND all_objects $<TARGET_OBJECTS:${dependency}>)
+        elseif(${type} STREQUAL "SHARED_LIBRARY")
+            list(APPEND all_objects $<TARGET_OBJECTS:${dependency}>)
+        endif()
+    endforeach()
+    if(ARG_TYPE)
+        add_library(${output_target} ${ARG_TYPE} ${all_objects})
+    else()
+        add_library(${output_target} ${all_objects})
     endif()
-  endforeach()
-  get_target_property(link_libraries ${input_target} INTERFACE_LINK_LIBRARIES)
-  foreach(dependency IN LISTS link_libraries)
-    if(TARGET ${dependency})
-    get_dependencies(${dependency})
-    endif()
-  endforeach()
-  set(all_dependencies ${all_dependencies} PARENT_SCOPE)
-  endfunction()
-  foreach(input_target IN LISTS ARG_UNPARSED_ARGUMENTS)
-  get_dependencies(${input_target})
-  endforeach()
-  foreach(dependency IN LISTS all_dependencies)
-  get_target_property(type ${dependency} TYPE)
-  if(${type} STREQUAL "STATIC_LIBRARY")
-    list(APPEND all_objects $<TARGET_OBJECTS:${dependency}>)
-  elseif(${type} STREQUAL "OBJECT_LIBRARY")
-    list(APPEND all_objects $<TARGET_OBJECTS:${dependency}>)
-  elseif(${type} STREQUAL "SHARED_LIBRARY")
-    list(APPEND all_objects $<TARGET_OBJECTS:${dependency}>)
-  endif()
-  endforeach()
-  if(ARG_TYPE)
-    add_library(${output_target} ${ARG_TYPE} ${all_objects})
-  else()
-    add_library(${output_target} ${all_objects})
-  endif()
-  add_dependencies(${output_target} ${ARG_UNPARSED_ARGUMENTS})
+    add_dependencies(${output_target} ${ARG_UNPARSED_ARGUMENTS})
 endfunction()
 
 
@@ -105,7 +105,7 @@ if(NOT SUPPORT_GLFW AND NOT SUPPORT_SDL2 AND NOT SUPPORT_SDL3 AND NOT SUPPORT_RG
     set(DAWN_USE_WAYLAND OFF)
     option(RAYGPU_USE_X11 OFF)
 else()
-    find_package(PkgConfig QUIET)    
+    find_package(PkgConfig QUIET)
     pkg_check_modules(WAYLAND_CLIENT QUIET wayland-client)
     if(WAYLAND_CLIENT_FOUND)
         option(RAYGPU_USE_WAYLAND "" ON)
@@ -123,7 +123,7 @@ endif()
 
 if((SUPPORT_WGPU_BACKEND OR SUPPORT_WGSL_PARSER) AND NOT EMSCRIPTEN)
     set(DAWN_IS_IN_USE True)
-    
+
     # determine dawn backends to use
     set(ENABLE_NULL_VAL ON)
     set(ENABLE_D3D12_VAL OFF)
@@ -167,7 +167,7 @@ if((SUPPORT_WGPU_BACKEND OR SUPPORT_WGSL_PARSER) AND NOT EMSCRIPTEN)
     set(DAWN_ENABLE_NULL ${ENABLE_NULL_VAL} CACHE BOOL "Enable Null Backend" FORCE)
     set(DAWN_ENABLE_DESKTOP_GL ${ENABLE_OPENGL_VAL} CACHE BOOL "Enable Desktop GL" FORCE)
     set(DAWN_ENABLE_OPENGLES OFF CACHE BOOL "Disable OpenGLES" FORCE)
-    
+
     set(DAWN_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
     set(DAWN_USE_WINDOWS_UI OFF CACHE BOOL "" FORCE)
     set(DAWN_BUILD_PROTOBUF OFF CACHE BOOL "" FORCE)
@@ -203,7 +203,7 @@ if((SUPPORT_WGPU_BACKEND OR SUPPORT_WGSL_PARSER) AND NOT EMSCRIPTEN)
 
     set(TINT_BUILD_GLSL_VALIDATOR OFF CACHE BOOL "" FORCE)
     set(TINT_BUILD_IR_BINARY OFF CACHE BOOL "" FORCE)
-    
+
     if(SUPPORT_GLSL_PARSER)
         set(TINT_BUILD_SPV_READER ON CACHE BOOL "" FORCE)
     else()
@@ -211,7 +211,7 @@ if((SUPPORT_WGPU_BACKEND OR SUPPORT_WGSL_PARSER) AND NOT EMSCRIPTEN)
     endif()
 
     set(TINT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-    
+
     if(EMSCRIPTEN OR NOT RAYGPU_ENABLE_INSTALL)
         set(DAWN_ENABLE_INSTALL OFF CACHE BOOL "Enable install step for Dawn libraries" FORCE)
         set(TINT_ENABLE_INSTALL OFF CACHE BOOL "Enable install step for Tint libraries" FORCE)
@@ -222,10 +222,10 @@ if((SUPPORT_WGPU_BACKEND OR SUPPORT_WGSL_PARSER) AND NOT EMSCRIPTEN)
         set(TINT_ENABLE_INSTALL ON CACHE BOOL "Enable install step for Tint libraries" FORCE)
         set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
     endif()
-    
-    
+
+
     if(UNIX AND NOT ANDROID)
-        find_package(PkgConfig QUIET)    
+        find_package(PkgConfig QUIET)
         pkg_check_modules(WAYLAND_CLIENT QUIET wayland-client)
         if(WAYLAND_CLIENT_FOUND)
             option(RAYGPU_USE_WAYLAND "" ON)
@@ -280,7 +280,7 @@ if(NOT EMSCRIPTEN AND SUPPORT_GLSL_PARSER AND NOT TARGET glslang)
     option(ENABLE_OPT "Enable glslang spirv optimizations (requires spirv-tools)" OFF)
     option(ENABLE_HLSL "Enable HLSL compilation" OFF)
     option(ENABLE_SPVREMAPPER "" OFF)
-    add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/amalgamation/glslang)  
+    add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/amalgamation/glslang)
 endif()
 
 if(SUPPORT_SDL2)
@@ -294,7 +294,7 @@ endif()
 if(SUPPORT_SDL3)
     #find_package(SDL3 QUIET)
     if(NOT SDL3_FOUND)
-        
+
         list(APPEND SDL_DISABLED_FEATURES
             ALTIVEC ARMNEON ASAN DIALOG GPU ASSEMBLY AVX AVX2 AVX512F BACKGROUNDING_SIGNAL
             CCACHE CLANG_TIDY CLOCK_GETTIME DBUS DEPS_SHARED DIRECTX POWER JOYSTICK HAPTIC AUDIO DISKAUDIO DUMMYAUDIO
@@ -366,7 +366,7 @@ set(RG_SOURCES
 
 if(SUPPORT_VULKAN_BACKEND)
     set(WGVK_BUILD_WGSL_SUPPORT ${SUPPORT_WGSL_PARSER})
-    
+
     if(NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/../WGVK")
         FetchContent_Declare(
             wgvk
@@ -465,15 +465,15 @@ foreach(file ${SUPPRESS_WARNINGS_SOURCE_FILES})
 endforeach()
 
 
-target_include_directories(${raygpu_core_library_name} PUBLIC  
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>  
+target_include_directories(${raygpu_core_library_name} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
     $<INSTALL_INTERFACE:include/>
 )
 set(raygpu_linked_deps "")
 
 if(EMSCRIPTEN)
     if(TARGET emdawnwebgpu_c)
-    list(APPEND raygpu_linked_deps
+        list(APPEND raygpu_linked_deps
         emdawnwebgpu_c
         emdawnwebgpu_cpp
     )
@@ -520,7 +520,7 @@ endif()
 
 target_link_libraries(${raygpu_core_library_name} PUBLIC ${raygpu_linked_deps})
 
-if(NOT SUPPORT_WGPU_BACKEND) 
+if(NOT SUPPORT_WGPU_BACKEND)
     target_link_libraries(${raygpu_core_library_name} PUBLIC wgvk)
 endif()
 
@@ -564,29 +564,37 @@ endif()
 if(SUPPORT_SDL3)
     list(APPEND EXPORT_RG_TARGETS SDL3::SDL3)
 endif()
-if(RAYGPU_BUILD_SHARED_LIBRARY OR BUILD_SHARED_LIBS)
-  
-  cst_bundle_libraries(raygpu ${raygpu_core_library_name} TYPE SHARED ${raygpu_linked_deps})
-else()
-  cst_bundle_libraries(raygpu ${raygpu_core_library_name} TYPE STATIC ${raygpu_linked_deps})
-endif()
-# Don't link to raygpu_core at all - raygpu already contains its objects
-# Just propagate the interface properties manually:
-target_include_directories(raygpu PUBLIC 
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>  
-    $<INSTALL_INTERFACE:include/>
-)
+
 target_include_directories(${raygpu_core_library_name} PRIVATE "${CMAKE_CURRENT_LIST_DIR}/src/internal_include")
-get_target_property(core_compile_defs ${raygpu_core_library_name} INTERFACE_COMPILE_DEFINITIONS)
-if(core_compile_defs)
-    target_compile_definitions(raygpu PUBLIC ${core_compile_defs})
+
+if(RAYGPU_BUILD_SHARED_LIBRARY OR BUILD_SHARED_LIBS)
+    set_target_properties(${raygpu_core_library_name} PROPERTIES OUTPUT_NAME "raygpu")
+
+    if(APPLE)
+        target_link_libraries(${raygpu_core_library_name} PUBLIC "-framework Cocoa" "-framework IOKit" "-framework Metal" "-framework QuartzCore")
+    endif()
+
+    add_library(raygpu ALIAS ${raygpu_core_library_name})
+else()
+    cst_bundle_libraries(raygpu ${raygpu_core_library_name} TYPE STATIC ${raygpu_linked_deps})
+
+    target_include_directories(raygpu PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
+        $<INSTALL_INTERFACE:include/>
+    )
+
+    get_target_property(core_compile_defs ${raygpu_core_library_name} INTERFACE_COMPILE_DEFINITIONS)
+    if(core_compile_defs)
+        target_compile_definitions(raygpu PUBLIC ${core_compile_defs})
+    endif()
+
+    target_link_libraries(raygpu INTERFACE raygpu_core)
+
+    if(APPLE)
+        target_link_libraries(raygpu PUBLIC "-framework Cocoa" "-framework IOKit" "-framework Metal" "-framework QuartzCore")
+    endif()
 endif()
 
-
-target_link_libraries(raygpu INTERFACE raygpu_core)
-if((RAYGPU_BUILD_SHARED_LIBRARY OR BUILD_SHARED_LIBS) AND APPLE)
-  target_link_libraries(raygpu PUBLIC "-framework Cocoa" "-framework IOKit" "-framework Metal" "-framework QuartzCore")
-endif()
 
 if(DEFINED ENV{HOMEBREW_PREFIX})
     # Construct the RPATH using the environment variable
@@ -599,20 +607,26 @@ endif()
 
 # ----- Install targets for raygpu -----
 if(RAYGPU_ENABLE_INSTALL)
-  include(CMakePackageConfigHelpers)
+    include(CMakePackageConfigHelpers)
 
-  # Exported target names
-  set(RAYGPU_INSTALL_EXPORT RaygpuTargets)
-  set(RAYGPU_NAMESPACE raygpu::)
+    # Exported target names
+    set(RAYGPU_INSTALL_EXPORT RaygpuTargets)
+    set(RAYGPU_NAMESPACE raygpu::)
 
-  # 1) Install libraries
-  if(SUPPORT_GLFW)
-    set(GLFW_MAYBE glfw)
-  endif()
-  
-  install(
+    # 1) Install libraries
+    if(SUPPORT_GLFW)
+        set(GLFW_MAYBE glfw)
+    endif()
+
+    if(RAYGPU_BUILD_SHARED_LIBRARY OR BUILD_SHARED_LIBS)
+        set(INSTALL_TARGETS raygpu_core)
+    else()
+        set(INSTALL_TARGETS raygpu raygpu_core)
+    endif()
+
+    install(
     TARGETS
-      raygpu raygpu_core wgvk glslang ${GLFW_MAYBE}
+      ${INSTALL_TARGETS} wgvk glslang ${GLFW_MAYBE}
     EXPORT ${RAYGPU_INSTALL_EXPORT}
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
@@ -620,16 +634,16 @@ if(RAYGPU_ENABLE_INSTALL)
     INCLUDES DESTINATION include
   )
 
-  install(
+    install(
     DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
     DESTINATION include
     FILES_MATCHING
       PATTERN "raygpu.h" PATTERN "config.h" PATTERN "macros_and_constants.h" PATTERN "mathutils.h"
   )
 
-  set(RAYGPU_CONFIG_INSTALL_DIR lib/cmake/raygpu)
+    set(RAYGPU_CONFIG_INSTALL_DIR lib/cmake/raygpu)
 
-  configure_package_config_file(
+    configure_package_config_file(
     "${CMAKE_CURRENT_LIST_DIR}/cmake/raygpuConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/raygpuConfig.cmake"
     INSTALL_DESTINATION ${RAYGPU_CONFIG_INSTALL_DIR}
@@ -637,26 +651,26 @@ if(RAYGPU_ENABLE_INSTALL)
     NO_CHECK_REQUIRED_COMPONENTS_MACRO
   )
 
-  write_basic_package_version_file(
+    write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/raygpuConfigVersion.cmake"
     VERSION 0.1.0
     COMPATIBILITY SameMajorVersion
   )
 
-  install(
+    install(
     FILES
       "${CMAKE_CURRENT_BINARY_DIR}/raygpuConfig.cmake"
       "${CMAKE_CURRENT_BINARY_DIR}/raygpuConfigVersion.cmake"
     DESTINATION ${RAYGPU_CONFIG_INSTALL_DIR}
   )
 
-  install(
+    install(
     EXPORT ${RAYGPU_INSTALL_EXPORT}
     NAMESPACE ${RAYGPU_NAMESPACE}
     DESTINATION ${RAYGPU_CONFIG_INSTALL_DIR}
   )
 
-  export(
+    export(
     EXPORT ${RAYGPU_INSTALL_EXPORT}
     NAMESPACE ${RAYGPU_NAMESPACE}
     FILE "${CMAKE_CURRENT_BINARY_DIR}/raygpuTargets.cmake"

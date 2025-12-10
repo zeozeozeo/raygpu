@@ -240,7 +240,7 @@ bool IsCursorHidden_GLFW(GLFWwindow* window){
 void EnableCursor_GLFW(GLFWwindow* window){
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
-void DisableCursorGLFW(GLFWwindow* window){
+void DisableCursor_GLFW(GLFWwindow* window){
     #if !defined(__EMSCRIPTEN__) && !defined(DAWN_USE_WAYLAND) && defined(GLFW_CURSOR_CAPTURED)
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_CAPTURED);
     #endif

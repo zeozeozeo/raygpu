@@ -1819,7 +1819,38 @@ bool IsMouseButtonReleased(int button){
 bool IsCursorOnScreen(cwoid){
     return CreatedWindowMap_get(&g_renderstate.createdSubwindows, GetActiveWindowHandle())->input_state.cursorInWindow;
 }
+void EnableCursor(cwoid) {
+    RGWindowImpl* impl = CreatedWindowMap_get(&g_renderstate.createdSubwindows, GetActiveWindowHandle());
+    
+    if (!impl) return;
 
+    switch (impl->type) {
+    case windowType_glfw:
+        EnableCursor_GLFW(impl->handle);
+        break;
+    default:
+        TRACELOG(LOG_WARNING, "EnableCursor not implemented for backend");
+        break;
+    }
+
+    impl->input_state.cursorInWindow = 1; 
+}
+void DisableCursor(cwoid) {
+    RGWindowImpl* impl = CreatedWindowMap_get(&g_renderstate.createdSubwindows, GetActiveWindowHandle());
+    
+    if (!impl) return;
+
+    switch (impl->type) {
+    case windowType_glfw:
+        DisableCursor_GLFW(impl->handle);
+        break;
+    default:
+        TRACELOG(LOG_WARNING, "DisableCursor not implemented for backend");
+        break;
+    }
+
+    impl->input_state.cursorInWindow = 0; 
+}
 
 
 void DrawFPS(int posX, int posY){

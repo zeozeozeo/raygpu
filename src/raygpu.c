@@ -240,6 +240,7 @@ WGPUBuffer vbo_buf = 0;
 VertexArray* renderBatchVAO;
 DescribedBuffer* renderBatchVBO;
 PrimitiveType current_drawmode;
+DescribedComputePipeline* g_activeComputePipeline = NULL;
 //DescribedBuffer vbomap;
 
 #if RAYGPU_NO_INLINE_FUNCTIONS == 1
@@ -2192,26 +2193,54 @@ Shader GetActiveShader(){
 }
 
 void SetTexture                   (uint32_t index, Texture tex){
-    SetShaderTexture(GetActiveShader(), index, tex);
+    if(g_activeComputePipeline){
+        SetBindgroupTexture(&g_activeComputePipeline->bindGroup, index, tex);
+    } else {
+        SetShaderTexture(GetActiveShader(), index, tex);
+    }
 }
 RGAPI void SetTextureView (uint32_t index, WGPUTextureView tex){
-    ShaderImpl* sh = allocatedShaderIDs_shc + GetActiveShader().id;
-    SetBindgroupTextureView(&sh->bindGroup, index, tex);
+    if(g_activeComputePipeline){
+        SetBindgroupTextureView(&g_activeComputePipeline->bindGroup, index, tex);
+    } else {
+        ShaderImpl* sh = allocatedShaderIDs_shc + GetActiveShader().id;
+        SetBindgroupTextureView(&sh->bindGroup, index, tex);
+    }
 }
 void SetSampler                   (uint32_t index, DescribedSampler sampler){
-    SetShaderSampler (GetActiveShader(), index, sampler);
+    if(g_activeComputePipeline){
+        SetBindgroupSampler(&g_activeComputePipeline->bindGroup, index, sampler);
+    } else {
+        SetShaderSampler (GetActiveShader(), index, sampler);
+    }
 }
 void SetUniformBuffer             (uint32_t index, DescribedBuffer* buffer){
-    SetShaderUniformBuffer (GetActiveShader(), index, buffer);
+    if(g_activeComputePipeline){
+        SetBindgroupUniformBuffer(&g_activeComputePipeline->bindGroup, index, buffer);
+    } else {
+        SetShaderUniformBuffer (GetActiveShader(), index, buffer);
+    }
 }
 void SetStorageBuffer             (uint32_t index, DescribedBuffer* buffer){
-    SetShaderStorageBuffer(GetActiveShader(), index, buffer);
+    if(g_activeComputePipeline){
+        SetBindgroupStorageBuffer(&g_activeComputePipeline->bindGroup, index, buffer);
+    } else {
+        SetShaderStorageBuffer(GetActiveShader(), index, buffer);
+    }
 }
 void SetUniformBufferData         (uint32_t index, const void* data, size_t size){
-    SetShaderUniformBufferData(GetActiveShader(), index, data, size);
+    if(g_activeComputePipeline){
+        SetBindgroupUniformBufferData(&g_activeComputePipeline->bindGroup, index, data, size);
+    } else {
+        SetShaderUniformBufferData(GetActiveShader(), index, data, size);
+    }
 }
 void SetStorageBufferData         (uint32_t index, const void* data, size_t size){
-    SetShaderStorageBufferData(GetActiveShader(), index, data, size);
+    if(g_activeComputePipeline){
+        SetBindgroupStorageBufferData(&g_activeComputePipeline->bindGroup, index, data, size);
+    } else {
+        SetShaderStorageBufferData(GetActiveShader(), index, data, size);
+    }
 }
 
 void SetBindgroupUniformBuffer (DescribedBindGroup* bg, uint32_t index, DescribedBuffer* buffer){

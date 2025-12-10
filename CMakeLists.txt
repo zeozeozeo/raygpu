@@ -13,11 +13,17 @@ option(SUPPORT_RGFW "Enable windowing with RGFW" OFF)
 option(RAYGPU_BUILD_TESTS "Build test executables for raygpu" OFF)
 option(RAYGPU_BUILD_SHARED_LIBRARY "Build shared raygpu library" OFF)
 option(RAYGPU_ENABLE_INSTALL "Enable install targets for raygpu" OFF)
+
 if(EMSCRIPTEN OR SUPPORT_WGPU_BACKEND)
     option(SUPPORT_WGPU_BACKEND "Enable the WebGPU backend" ON)
     option(SUPPORT_WGSL_PARSER "Support WGSL parsing with tint" ON)
     option(SUPPORT_GLSL_PARSER "Support GLSL parsing with glslang" OFF)
     option(SUPPORT_VULKAN_BACKEND "Enable the Vulkan Backend" OFF)
+    if(SUPPORT_WGPU_BACKEND)
+        option(SUPPORT_TINT_WGSL_PARSER "Use tint to parse WGSL" ON)
+    else()
+        option(SUPPORT_TINT_WGSL_PARSER "Use tint to parse WGSL" OFF)
+    endif()
 else()
     option(SUPPORT_WGPU_BACKEND "Enable the WebGPU backend" OFF)
     option(SUPPORT_WGSL_PARSER "Support WGSL parsing with tint" OFF)
@@ -196,8 +202,8 @@ if((SUPPORT_WGPU_BACKEND OR SUPPORT_WGSL_PARSER) AND NOT EMSCRIPTEN)
         set(FETCHCONTENT_QUIET FALSE)
         FetchContent_Declare(
             dawn
-            URL https://github.com/manuel5975p/dawn_monorepo/archive/refs/tags/chromium/7369-fixed.tar.gz
-
+            URL https://github.com/manuel5975p/dawn_monorepo/archive/refs/tags/v7562.tar.gz
+            DOWNLOAD_EXTRACT_TIMESTAMP True
         )
         FetchContent_MakeAvailable(dawn)
     endif()
@@ -299,7 +305,6 @@ endif()
 set(RG_SOURCES
     "src/InitWindow.c"
     "src/raygpu.c"
-    "src/wgsl_parse_lite.c"
     "src/stb_impl.c"
     "src/sinfl_impl.c"
     "src/cgltf_impl.c"
@@ -310,6 +315,11 @@ set(RG_SOURCES
     "src/windows_stuff.c"
     "src/backend_wgpu.c"
 )
+if(SUPPORT_TINT_WGSL_PARSER)
+    list(APPEND RG_SOURCES "src/shader_parse.cpp")
+else()
+    list(APPEND RG_SOURCES "src/wgsl_parse_lite.c")
+endif()
 
 if(SUPPORT_VULKAN_BACKEND)
     set(WGVK_BUILD_WGSL_SUPPORT ${SUPPORT_WGSL_PARSER})
@@ -390,6 +400,9 @@ if(SUPPORT_WGSL_PARSER)
         target_compile_definitions(${raygpu_core_library_name} PUBLIC SUPPORT_WGSL_PARSER=1)
     else()
         target_compile_definitions(${raygpu_core_library_name} PUBLIC SUPPORT_WGSL_PARSER=1)
+    endif()
+    if(SUPPORT_TINT_WGSL_PARSER)
+        target_compile_definitions(${raygpu_core_library_name} PRIVATE SUPPORT_TINT_WGSL_PARSER=1)
     endif()
 endif()
 if(MSVC)

@@ -1153,11 +1153,14 @@ static bool initAdapterAndDevice(InitContext_Impl _ctx){
         case WGPUAdapterType_CPU:
             requestAdapterOptions.forceFallbackAdapter = true;
             break;
-        case WGPUAdapterType_DiscreteGPU: /* fallthrough */
-        case WGPUAdapterType_IntegratedGPU:
+        case WGPUAdapterType_DiscreteGPU:
             requestAdapterOptions.powerPreference = WGPUPowerPreference_HighPerformance;
             break;
+        case WGPUAdapterType_IntegratedGPU:
+            requestAdapterOptions.powerPreference = WGPUPowerPreference_LowPower;
+            break;
         default:
+            requestAdapterOptions.powerPreference = WGPUPowerPreference_HighPerformance;
             break;
     }
 

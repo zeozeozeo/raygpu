@@ -2242,7 +2242,7 @@ DescribedComputePipeline *LoadComputePipeline(const char *shaderCode) {
 
     quickSort_ResourceTypeDescriptor(udesc, udesc + insertIndex);
 
-    DescribedComputePipeline *ret = LoadComputePipelineEx(shaderCode, udesc, insertIndex);
+    DescribedComputePipeline *ret = LoadComputePipelineEx(shaderCode, udesc, insertIndex, NULL);
     RL_FREE(udesc);
     StringToUniformMap_free(bindings);
     RL_FREE(bindings);
@@ -2250,7 +2250,7 @@ DescribedComputePipeline *LoadComputePipeline(const char *shaderCode) {
 }
 
 RGAPI DescribedComputePipeline *
-LoadComputePipelineEx(const char *shaderCode, const ResourceTypeDescriptor *uniforms, uint32_t uniformCount) {
+LoadComputePipelineEx(const char *shaderCode, const ResourceTypeDescriptor *uniforms, uint32_t uniformCount, const char *entryPoint) {
     ShaderSources sources = singleStage(shaderCode, detectShaderLanguageSingle(shaderCode, strlen(shaderCode)), RGShaderStageEnum_Compute);
 
     StringToUniformMap* bindmap = getBindings(sources);
@@ -2263,9 +2263,22 @@ LoadComputePipelineEx(const char *shaderCode, const ResourceTypeDescriptor *unif
     pldesc.bindGroupLayouts = (WGPUBindGroupLayout *)&ret->bglayout.layout;
     WGPUPipelineLayout playout = wgpuDeviceCreatePipelineLayout((WGPUDevice)GetDevice(), &pldesc);
     ret->shaderModule = LoadShaderModule(sources);
-    desc.compute.module = (WGPUShaderModule)ret->shaderModule.stages[RGShaderStageEnum_Compute].module;
 
-    desc.compute.entryPoint = CLITERAL(WGPUStringView){ret->shaderModule.reflectionInfo.ep[RGShaderStageEnum_Compute].name, strlen(ret->shaderModule.reflectionInfo.ep[RGShaderStageEnum_Compute].name)};
+    const char* epName = NULL;
+
+    if (entryPoint && entryPoint[0] != '\0') {
+        epName = entryPoint;
+    } else if (ret->shaderModule.reflectionInfo.ep[RGShaderStageEnum_Compute].name[0] != '\0') {
+        epName = ret->shaderModule.reflectionInfo.ep[RGShaderStageEnum_Compute].name;
+    }
+
+    if (epName == NULL) {
+        TRACELOG(LOG_FATAL, "Failed to find Compute entry point in shader (Tint reflection failed and no explicit name provided).");
+    }
+
+    desc.compute.module = (WGPUShaderModule)ret->shaderModule.stages[RGShaderStageEnum_Compute].module;
+    desc.compute.entryPoint = CLITERAL(WGPUStringView){epName, strlen(epName)};
+
     desc.layout = playout;
     WGPUDevice device = (WGPUDevice)GetDevice();
     ret->pipeline = wgpuDeviceCreateComputePipeline((WGPUDevice)GetDevice(), &desc);

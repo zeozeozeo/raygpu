@@ -1635,7 +1635,7 @@ RGAPI void UpdateBindGroup(DescribedBindGroup* bg);
 RGAPI void UnloadBindGroup(DescribedBindGroup* bg);
 RGAPI DescribedPipeline* Relayout(DescribedPipeline* pl, VertexArray* vao);
 RGAPI DescribedComputePipeline* LoadComputePipeline(const char* shaderCode);
-RGAPI DescribedComputePipeline* LoadComputePipelineEx(const char* shaderCode, const ResourceTypeDescriptor* uniforms, uint32_t uniformCount);
+RGAPI DescribedComputePipeline* LoadComputePipelineEx(const char* shaderCode, const ResourceTypeDescriptor* uniforms, uint32_t uniformCount, const char* entryPoint);
 RGAPI DescribedRaytracingPipeline* LoadRaytracingPipeline(const DescribedShaderModule* shaderModule);
 RGAPI Shader DefaultShader(cwoid);
 RGAPI RenderSettings GetCurrentSettings(cwoid);

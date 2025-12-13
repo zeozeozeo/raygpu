@@ -1350,8 +1350,6 @@ RGAPI void Initialize_SDL3(cwoid);
 RGAPI bool WindowShouldClose_GLFW(GLFWwindow* win);
 RGAPI SubWindow InitWindow_GLFW(int width, int height, const char* title);
 RGAPI SubWindow InitWindow_RGFW(int width, int height, const char* title);
-RGAPI void EnableCursor_GLFW(GLFWwindow* win);
-RGAPI void DisableCursor_GLFW(GLFWwindow* win);
 RGAPI void ToggleFullscreen_GLFW(cwoid);
 RGAPI void ToggleFullscreen_SDL2(cwoid);
 RGAPI void ToggleFullscreen_SDL3(cwoid);

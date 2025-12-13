@@ -1794,10 +1794,13 @@ float GetGesturePinchAngle(cwoid){
 Vector2 GetMousePosition(cwoid){
     return CreatedWindowMap_get(&g_renderstate.createdSubwindows, GetActiveWindowHandle())->input_state.mousePos;
 }
-Vector2 GetMouseDelta(cwoid){
+RGAPI Vector2 GetMouseDelta(cwoid){
+    RGWindowImpl* impl = CreatedWindowMap_get(&g_renderstate.createdSubwindows, GetActiveWindowHandle());
+    if (!impl) return CLITERAL(Vector2){0,0};
+
     Vector2 ret = {
-        .x = CreatedWindowMap_get(&g_renderstate.createdSubwindows, GetActiveWindowHandle())->input_state.mousePos.x - CreatedWindowMap_get(&g_renderstate.createdSubwindows, GetActiveWindowHandle())->input_state.mousePos.x,
-        .y = CreatedWindowMap_get(&g_renderstate.createdSubwindows, GetActiveWindowHandle())->input_state.mousePos.y - CreatedWindowMap_get(&g_renderstate.createdSubwindows, GetActiveWindowHandle())->input_state.mousePos.y
+        .x = impl->input_state.mousePos.x - impl->input_state.mousePosPrevious.x,
+        .y = impl->input_state.mousePos.y - impl->input_state.mousePosPrevious.y
     };
     return ret;
 }
@@ -1819,39 +1822,146 @@ bool IsMouseButtonReleased(int button){
 bool IsCursorOnScreen(cwoid){
     return CreatedWindowMap_get(&g_renderstate.createdSubwindows, GetActiveWindowHandle())->input_state.cursorInWindow;
 }
-void EnableCursor(cwoid) {
+
+#if SUPPORT_GLFW == 1
+void ShowCursor_GLFW(GLFWwindow* window);
+void HideCursor_GLFW(GLFWwindow* window);
+bool IsCursorHidden_GLFW(GLFWwindow* window);
+void EnableCursor_GLFW(GLFWwindow* window);
+void DisableCursor_GLFW(GLFWwindow* window);
+#endif
+
+#if SUPPORT_SDL3 == 1
+void ShowCursor_SDL3(void* window);
+void HideCursor_SDL3(void* window);
+bool IsCursorHidden_SDL3(void* window);
+void EnableCursor_SDL3(void* window);
+void DisableCursor_SDL3(void* window);
+#endif
+
+#if SUPPORT_SDL2 == 1
+void ShowCursor_SDL2(void* window);
+void HideCursor_SDL2(void* window);
+bool IsCursorHidden_SDL2(void* window);
+void EnableCursor_SDL2(void* window);
+void DisableCursor_SDL2(void* window);
+#endif
+
+// TODO: implement for RGFW
+//#if SUPPORT_RGFW == 1
+//void ShowCursor_RGFW(void* window);
+//void HideCursor_RGFW(void* window);
+//bool IsCursorHidden_RGFW(void* window);
+//void EnableCursor_RGFW(void* window);
+//void DisableCursor_RGFW(void* window);
+//#endif
+
+RGAPI void ShowCursor(cwoid){
     RGWindowImpl* impl = CreatedWindowMap_get(&g_renderstate.createdSubwindows, GetActiveWindowHandle());
-    
     if (!impl) return;
 
     switch (impl->type) {
-    case windowType_glfw:
-        EnableCursor_GLFW(impl->handle);
-        break;
-    default:
-        TRACELOG(LOG_WARNING, "EnableCursor not implemented for backend");
-        break;
+        #if SUPPORT_GLFW == 1
+        case windowType_glfw: ShowCursor_GLFW(impl->handle); break;
+        #endif
+        #if SUPPORT_SDL3 == 1
+        case windowType_sdl3: ShowCursor_SDL3(impl->handle); break;
+        #endif
+        #if SUPPORT_SDL2 == 1
+        case windowType_sdl2: ShowCursor_SDL2(impl->handle); break;
+        #endif
+        #if SUPPORT_RGFW == 1
+        case windowType_rgfw: ShowCursor_RGFW(impl->handle); break;
+        #endif
+        default: TRACELOG(LOG_WARNING, "ShowCursor not implemented for this backend"); break;
     }
-
     impl->input_state.cursorInWindow = 1; 
 }
-void DisableCursor(cwoid) {
+
+RGAPI void HideCursor(cwoid){
     RGWindowImpl* impl = CreatedWindowMap_get(&g_renderstate.createdSubwindows, GetActiveWindowHandle());
-    
     if (!impl) return;
 
     switch (impl->type) {
-    case windowType_glfw:
-        DisableCursor_GLFW(impl->handle);
-        break;
-    default:
-        TRACELOG(LOG_WARNING, "DisableCursor not implemented for backend");
-        break;
+        #if SUPPORT_GLFW == 1
+        case windowType_glfw: HideCursor_GLFW(impl->handle); break;
+        #endif
+        #if SUPPORT_SDL3 == 1
+        case windowType_sdl3: HideCursor_SDL3(impl->handle); break;
+        #endif
+        #if SUPPORT_SDL2 == 1
+        case windowType_sdl2: HideCursor_SDL2(impl->handle); break;
+        #endif
+        #if SUPPORT_RGFW == 1
+        case windowType_rgfw: HideCursor_RGFW(impl->handle); break;
+        #endif
+        default: TRACELOG(LOG_WARNING, "HideCursor not implemented for this backend"); break;
     }
-
-    impl->input_state.cursorInWindow = 0; 
 }
 
+RGAPI bool IsCursorHidden(cwoid){
+    RGWindowImpl* impl = CreatedWindowMap_get(&g_renderstate.createdSubwindows, GetActiveWindowHandle());
+    if (!impl) return false;
+
+    switch (impl->type) {
+        #if SUPPORT_GLFW == 1
+        case windowType_glfw: return IsCursorHidden_GLFW(impl->handle);
+        #endif
+        #if SUPPORT_SDL3 == 1
+        case windowType_sdl3: return IsCursorHidden_SDL3(impl->handle);
+        #endif
+        #if SUPPORT_SDL2 == 1
+        case windowType_sdl2: return IsCursorHidden_SDL2(impl->handle);
+        #endif
+        #if SUPPORT_RGFW == 1
+        case windowType_rgfw: return IsCursorHidden_RGFW(impl->handle);
+        #endif
+        default: return false;
+    }
+}
+
+RGAPI void EnableCursor(cwoid) {
+    RGWindowImpl* impl = CreatedWindowMap_get(&g_renderstate.createdSubwindows, GetActiveWindowHandle());
+    if (!impl) return;
+
+    switch (impl->type) {
+        #if SUPPORT_GLFW == 1
+        case windowType_glfw: EnableCursor_GLFW(impl->handle); break;
+        #endif
+        #if SUPPORT_SDL3 == 1
+        case windowType_sdl3: EnableCursor_SDL3(impl->handle); break;
+        #endif
+        #if SUPPORT_SDL2 == 1
+        case windowType_sdl2: EnableCursor_SDL2(impl->handle); break;
+        #endif
+        #if SUPPORT_RGFW == 1
+        case windowType_rgfw: EnableCursor_RGFW(impl->handle); break;
+        #endif
+        default: TRACELOG(LOG_WARNING, "EnableCursor not implemented for this backend"); break;
+    }
+    impl->input_state.cursorInWindow = 1; 
+}
+
+RGAPI void DisableCursor(cwoid) {
+    RGWindowImpl* impl = CreatedWindowMap_get(&g_renderstate.createdSubwindows, GetActiveWindowHandle());
+    if (!impl) return;
+
+    switch (impl->type) {
+        #if SUPPORT_GLFW == 1
+        case windowType_glfw: DisableCursor_GLFW(impl->handle); break;
+        #endif
+        #if SUPPORT_SDL3 == 1
+        case windowType_sdl3: DisableCursor_SDL3(impl->handle); break;
+        #endif
+        #if SUPPORT_SDL2 == 1
+        case windowType_sdl2: DisableCursor_SDL2(impl->handle); break;
+        #endif
+        #if SUPPORT_RGFW == 1
+        case windowType_rgfw: DisableCursor_RGFW(impl->handle); break;
+        #endif
+        default: TRACELOG(LOG_WARNING, "DisableCursor not implemented for this backend"); break;
+    }
+}
 
 void DrawFPS(int posX, int posY){
     char fpstext[256] = {0};

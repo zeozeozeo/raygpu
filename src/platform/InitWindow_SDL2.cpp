@@ -610,4 +610,29 @@ void ToggleFullscreen_SDL2(cwoid){
 }
 
 
+extern "C" {
+
+void ShowCursor_SDL2(void* windowHandle){
+    SDL_ShowCursor(SDL_ENABLE);
+}
+
+void HideCursor_SDL2(void* windowHandle){
+    SDL_ShowCursor(SDL_DISABLE);
+}
+
+bool IsCursorHidden_SDL2(void* windowHandle){
+    return SDL_ShowCursor(SDL_QUERY) == SDL_DISABLE;
+}
+
+void EnableCursor_SDL2(void* windowHandle){
+    SDL_SetRelativeMouseMode(SDL_FALSE);
+    SDL_ShowCursor(SDL_ENABLE);
+}
+
+void DisableCursor_SDL2(void* windowHandle){
+    SDL_SetRelativeMouseMode(SDL_TRUE);
+}
+
+}
+
 // end file src/InitWindow_SDL2.cpp

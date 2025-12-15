@@ -1489,7 +1489,7 @@ RGAPI bool IsImageValid(Image img);                                             
 RGAPI void UnloadTexture(Texture tex);
 RGAPI bool IsTextureValid(Texture tex);
 RGAPI Image LoadImageFromMemory(const char* extension, const void* data, size_t dataSize);
-RGAPI Image GenImageColor(Color a, uint32_t width, uint32_t height);
+RGAPI Image GenImageColor(int width, int height, Color a);
 RGAPI Image GenImageChecker(Color a, Color b, uint32_t width, uint32_t height, uint32_t checkerCount);
 RGAPI void SaveImage(Image img, const char* filepath);
 RGAPI unsigned char *DecodeDataBase64(const unsigned char *data, int *outputSize);

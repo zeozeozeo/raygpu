@@ -1952,6 +1952,27 @@ RenderTexture LoadRenderTexture(uint32_t width, uint32_t height) {
     return ret;
 }
 
+// Check if a render texture is valid (render texture data loaded)
+bool IsRenderTextureValid(RenderTexture tex) {
+    return IsTextureValid(tex.texture) &&        // Validate primary color attachment
+           IsTextureValid(tex.depth) &&          // Validate depth attachment
+           (tex.colorAttachmentCount > 0);       // Validate at least one color attachment exists
+}
+
+// Unload render texture from GPU memory (VRAM)
+void UnloadRenderTexture(RenderTexture tex) {
+    // Unload all color attachments
+    for (uint32_t i = 0; i < tex.colorAttachmentCount; i++) {
+        UnloadTexture(tex.colorAttachments[i]);
+    }
+    
+    // Unload multisampling color texture
+    UnloadTexture(tex.colorMultisample);
+    
+    // Unload depth texture
+    UnloadTexture(tex.depth);
+}
+
 DescribedShaderModule LoadShaderModuleSPIRV(ShaderSources sourcesSpirv) {
     DescribedShaderModule ret  = {0};
 #ifndef __EMSCRIPTEN__

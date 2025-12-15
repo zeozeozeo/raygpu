@@ -1649,6 +1649,8 @@ RGAPI Texture GetDefaultTexture(cwoid);
 RGAPI void UnloadPipeline(DescribedPipeline* pl);
 RGAPI RenderTexture LoadRenderTexture(uint32_t width, uint32_t height);
 RGAPI RenderTexture LoadRenderTextureEx(uint32_t width, uint32_t height, PixelFormat colorFormat, uint32_t sampleCount, uint32_t attachmentCount);
+RGAPI bool IsRenderTextureValid(RenderTexture tex);                                     // Check if a render texture is valid (render texture data loaded)
+RGAPI void UnloadRenderTexture(RenderTexture tex);                                      // Unload render texture from GPU memory (VRAM)
 RGAPI size_t GetPixelSizeInBytes(PixelFormat format);
 RGAPI Texture LoadBlankTexture(uint32_t width, uint32_t height);
 RGAPI Texture LoadTexture(const char* filename);

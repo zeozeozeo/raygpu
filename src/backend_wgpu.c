@@ -231,6 +231,14 @@ void UnloadTexture(Texture tex) {
         tex.id = NULL;
     }
 }
+
+// Check if a texture is valid (texture data loaded)
+bool IsTextureValid(Texture tex) {
+    return (tex.id != NULL) &&        // Validate texture handle exists
+           (tex.view != NULL) &&      // Validate texture view exists
+           (tex.width > 0) &&         // Validate texture width is positive
+           (tex.height > 0);          // Validate texture height is positive
+}
 void PresentSurface(FullSurface *fsurface) {
     wgpuSurfacePresent((WGPUSurface)fsurface->surface); 
 }

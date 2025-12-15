@@ -1524,6 +1524,7 @@ RGAPI void LoadFontDefault(void);
 RGAPI Font GetFontDefault(void);
 RGAPI GlyphInfo* LoadFontData(const unsigned char *fileData, int dataSize, int fontSize, int *codepoints, int codepointCount, int type);
 RGAPI Image GenImageFontAtlas(const GlyphInfo *glyphs, Rectangle **glyphRecs, int glyphCount, int fontSize, int padding, int packMethod);
+RGAPI Font LoadFont(const char *fileName);                                             // Load Font from GPU memory (VRAM)
 RGAPI void UnloadFont(Font font);                                                      // Unload Font from GPU memory (VRAM)
 RGAPI bool IsFontValid(Font font);                                                     // Check if a font is valid (font data loaded)
 RGAPI void SetShapesTexture(Texture tex, Rectangle rec);

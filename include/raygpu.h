@@ -1485,6 +1485,7 @@ RGAPI Color* LoadImageColors(Image img);
 RGAPI void UnloadImageColors(Color* cols);
 RGAPI uint64_t RoundUpToNextMultipleOf256(uint64_t x);
 RGAPI void UnloadImage(Image img);
+RGAPI bool IsImageValid(Image img);                                                     // Check if an image is valid (image data loaded)
 RGAPI void UnloadTexture(Texture tex);
 RGAPI bool IsTextureValid(Texture tex);
 RGAPI Image LoadImageFromMemory(const char* extension, const void* data, size_t dataSize);

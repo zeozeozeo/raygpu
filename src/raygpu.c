@@ -2490,6 +2490,14 @@ void UnloadImage(Image img){
     RL_FREE(img.data);
     img.data = NULL;
 }
+
+// Check if an image is valid (image data loaded)
+bool IsImageValid(Image img) {
+    return (img.data != NULL) &&        // Validate image data exists
+           (img.width > 0) &&           // Validate image width is positive
+           (img.height > 0) &&          // Validate image height is positive
+           (img.mipmaps > 0);           // Validate image has at least one mipmap level
+}
 Image LoadImageFromMemory(const char* extension, const void* data, size_t dataSize){
     Image image  = {0};
     image.mipmaps = 1;

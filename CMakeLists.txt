@@ -128,8 +128,6 @@ endif()
 
 
 if((SUPPORT_WGPU_BACKEND OR SUPPORT_WGSL_PARSER) AND NOT EMSCRIPTEN)
-    set(DAWN_IS_IN_USE True)
-
     # determine dawn backends to use
     set(ENABLE_NULL_VAL ON)
     set(ENABLE_D3D12_VAL OFF)

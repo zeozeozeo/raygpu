@@ -721,6 +721,12 @@ struct UniformAccessor{
 #endif
 typedef struct VertexArray VertexArray;
 
+typedef struct RGProfileResult {
+    char name[64];
+    double durationMs;
+    uint64_t startTimeNs;
+} RGProfileResult;
+
 #ifdef __cplusplus
 #define externcvar extern "C"
 #else
@@ -1831,6 +1837,11 @@ RGAPI WGPUAdapter GetAdapter (cwoid);
 RGAPI WGPUDevice GetDevice (cwoid);
 RGAPI WGPUQueue GetQueue (cwoid);
 RGAPI void* GetSurface (cwoid);
+
+RGAPI void InitDebugMarkers(uint32_t maxMarkers);
+RGAPI void BeginDebugMarker(const char* label);
+RGAPI void EndDebugMarker(cwoid);
+RGAPI int GetLastFrameResults(RGProfileResult* results, int maxResults);
 
 static inline uint32_t attributeSize(const RGVertexFormat fmt){
     switch(fmt){

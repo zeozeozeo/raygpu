@@ -1195,18 +1195,37 @@ static bool initAdapterAndDevice(InitContext_Impl _ctx){
 #endif
 }
 
+#ifdef SUPPORT_WGPU_BACKEND
+#    ifndef WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses
+#    define WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses (WGPUFeatureName)0x00050003 // Value used by Dawn
+#    endif
+#endif
 
 static bool initResumeEntry(InitContext_Impl _ctx){
     InitContext_Impl* ctx = &_ctx;
 
-    WGPUFeatureName fnames[2] = {
+    WGPUFeatureName fnames[4] = {
         WGPUFeatureName_ClipDistances,
         WGPUFeatureName_Float32Filterable,
+#ifdef SUPPORT_WGPU_BACKEND
+        WGPUFeatureName_TimestampQuery,
+        WGPUFeatureName_ChromiumExperimentalTimestampQueryInsidePasses,
+#endif
     };
+    
+#ifdef SUPPORT_WGPU_BACKEND
+    const char* enabledToggles[] = { "allow_unsafe_apis" };
+    WGPUDawnTogglesDescriptor togglesDesc = {0};
+    togglesDesc.chain.sType = (WGPUSType)0x0005000A; // WGPUSType_DawnTogglesDescriptor
+    togglesDesc.chain.next = NULL;
+    togglesDesc.enabledToggleCount = 1;
+    togglesDesc.enabledToggles = enabledToggles;
+#endif
 
     WGPUDeviceDescriptor deviceDesc = {
     #ifndef __EMSCRIPTEN__
-        .requiredFeatureCount = 2,
+        .nextInChain = (const WGPUChainedStruct*)&togglesDesc,
+        .requiredFeatureCount = sizeof(fnames) / sizeof(WGPUFeatureName),
         .requiredFeatures = fnames,
     #endif
         .deviceLostCallbackInfo = {
@@ -3095,9 +3114,265 @@ const char* TextureFormatName(WGPUTextureFormat fmt) {
     }
 }
 
+//TODO: profiler not finalized
 
+#define MAX_PROFILE_DEPTH 16
+#define PROFILER_FRAMES_IN_FLIGHT 3
 
+typedef enum BufferState {
+    STATE_IDLE,
+    STATE_RESOLVED,
+    STATE_MAPPING,
+    STATE_MAPPED
+} BufferState;
 
+typedef struct RGProfileFrame {
+    WGPUBuffer resolveBuffer;
+    WGPUBuffer mapBuffer;
+    BufferState state;
+    uint32_t queryCount;
+    char labels[MAX_PROFILE_DEPTH * 8][64];
+} RGProfileFrame;
 
+typedef struct RGProfilerState {
+    bool initialized;
+    uint32_t maxQueries;
+    WGPUQuerySet querySet;
+    double timestampPeriod;
 
-// end file src/backend_wgpu.c
+    RGProfileFrame frames[PROFILER_FRAMES_IN_FLIGHT];
+    uint8_t frameIndex; 
+
+    int stackDepth;
+    int stackIndices[MAX_PROFILE_DEPTH];
+} RGProfilerState;
+
+static RGProfilerState g_profiler = {0};
+
+RGAPI void InitDebugMarkers(uint32_t maxMarkers) {
+    if (g_profiler.initialized) return;
+
+    g_profiler.maxQueries = maxMarkers * 2;
+    g_profiler.frameIndex = 0;
+    g_profiler.stackDepth = 0;
+
+    WGPUQuerySetDescriptor qDesc = {
+        .type = WGPUQueryType_Timestamp,
+        .count = g_profiler.maxQueries,
+        .label = STRVIEW("RGProfile QuerySet")
+    };
+    g_profiler.querySet = wgpuDeviceCreateQuerySet(GetDevice(), &qDesc);
+
+    size_t bufSize = g_profiler.maxQueries * sizeof(uint64_t);
+
+    for(int i=0; i < PROFILER_FRAMES_IN_FLIGHT; i++) {
+        WGPUBufferDescriptor resolveDesc = {
+            .usage = WGPUBufferUsage_QueryResolve | WGPUBufferUsage_CopySrc,
+            .size = bufSize,
+            .label = STRVIEW("Profile Resolve Buffer")
+        };
+        g_profiler.frames[i].resolveBuffer = wgpuDeviceCreateBuffer(GetDevice(), &resolveDesc);
+
+        WGPUBufferDescriptor mapDesc = {
+            .usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead,
+            .size = bufSize,
+            .label = STRVIEW("Profile Map Buffer")
+        };
+        g_profiler.frames[i].mapBuffer = wgpuDeviceCreateBuffer(GetDevice(), &mapDesc);
+
+        g_profiler.frames[i].state = STATE_IDLE;
+        g_profiler.frames[i].queryCount = 0;
+    }
+
+    g_profiler.timestampPeriod = 1.0;
+    g_profiler.initialized = true;
+    TRACELOG(LOG_INFO, "RGProfiler initialized with %d queries (%d frames in flight)", g_profiler.maxQueries, PROFILER_FRAMES_IN_FLIGHT);
+}
+
+RGAPI void ShutdownDebugMarkers(void) {
+    if (!g_profiler.initialized) return;
+    wgpuQuerySetRelease(g_profiler.querySet);
+    for(int i=0; i < PROFILER_FRAMES_IN_FLIGHT; i++) {
+        wgpuBufferRelease(g_profiler.frames[i].resolveBuffer);
+        wgpuBufferRelease(g_profiler.frames[i].mapBuffer);
+    }
+    g_profiler.initialized = false;
+}
+
+RGAPI void BeginDebugMarker(const char* label) {
+    if (!g_profiler.initialized || g_profiler.stackDepth >= MAX_PROFILE_DEPTH) return;
+    
+    RGProfileFrame* frame = &g_profiler.frames[g_profiler.frameIndex];
+
+    if (frame->state != STATE_IDLE) return;
+    if (frame->queryCount + 2 > g_profiler.maxQueries) return;
+
+    uint32_t startIndex = frame->queryCount;
+    frame->queryCount++; 
+
+    snprintf(frame->labels[startIndex / 2], 64, "%s", label);
+
+    g_profiler.stackIndices[g_profiler.stackDepth++] = startIndex;
+
+    if (g_renderstate.activeRenderpass && g_renderstate.activeRenderpass->rpEncoder) {
+        wgpuRenderPassEncoderWriteTimestamp(
+            (WGPURenderPassEncoder)g_renderstate.activeRenderpass->rpEncoder, 
+            g_profiler.querySet, 
+            startIndex
+        );
+    } else if (g_renderstate.computepass.cpEncoder) {
+        wgpuComputePassEncoderWriteTimestamp(
+            (WGPUComputePassEncoder)g_renderstate.computepass.cpEncoder, 
+            g_profiler.querySet, 
+            startIndex
+        );
+    } else {
+        WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(GetDevice(), NULL);
+        wgpuCommandEncoderWriteTimestamp(enc, g_profiler.querySet, startIndex);
+        WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, NULL);
+        wgpuQueueSubmit(GetQueue(), 1, &cmd);
+        wgpuCommandBufferRelease(cmd);
+        wgpuCommandEncoderRelease(enc);
+    }
+}
+
+RGAPI void EndDebugMarker(cwoid) {
+    if (!g_profiler.initialized || g_profiler.stackDepth <= 0) return;
+
+    RGProfileFrame* frame = &g_profiler.frames[g_profiler.frameIndex];
+    if (frame->state != STATE_IDLE) return;
+
+    uint32_t startIndex = g_profiler.stackIndices[--g_profiler.stackDepth];
+    uint32_t endIndex = frame->queryCount;
+    frame->queryCount++;
+
+    if (g_renderstate.activeRenderpass && g_renderstate.activeRenderpass->rpEncoder) {
+        wgpuRenderPassEncoderWriteTimestamp(
+            (WGPURenderPassEncoder)g_renderstate.activeRenderpass->rpEncoder, 
+            g_profiler.querySet, 
+            endIndex
+        );
+    } 
+    else if (g_renderstate.computepass.cpEncoder) {
+        wgpuComputePassEncoderWriteTimestamp(
+            (WGPUComputePassEncoder)g_renderstate.computepass.cpEncoder, 
+            g_profiler.querySet, 
+            endIndex
+        );
+    }
+    else {
+        WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(GetDevice(), NULL);
+        wgpuCommandEncoderWriteTimestamp(enc, g_profiler.querySet, endIndex);
+        WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, NULL);
+        wgpuQueueSubmit(GetQueue(), 1, &cmd);
+        wgpuCommandBufferRelease(cmd);
+        wgpuCommandEncoderRelease(enc);
+    }
+}
+
+static void onProfilerMapAsync(WGPUMapAsyncStatus status, WGPUStringView msg, void* userdata, void* userdata2) {
+    RGProfileFrame* frame = (RGProfileFrame*)userdata;
+    if (status == WGPUMapAsyncStatus_Success) {
+        frame->state = STATE_MAPPED;
+    } else {
+        TRACELOG(LOG_ERROR, "Profiler map failed status: %d", status);
+        frame->state = STATE_IDLE; 
+    }
+}
+
+RGAPI int GetLastFrameResults(RGProfileResult* results, int maxResults) {
+    if (!g_profiler.initialized) return 0;
+
+    int resultCount = 0;
+
+    WGPUInstance instance = (WGPUInstance)GetInstance();
+    wgpuInstanceProcessEvents(instance);
+
+    for(int i=0; i < PROFILER_FRAMES_IN_FLIGHT; i++) {
+        RGProfileFrame* frame = &g_profiler.frames[i];
+
+        if (frame->state == STATE_MAPPED) {
+            const uint64_t* timestamps = (const uint64_t*)wgpuBufferGetConstMappedRange(
+                frame->mapBuffer, 0, frame->queryCount * sizeof(uint64_t)
+            );
+
+            if (timestamps) {
+                int pairs = frame->queryCount / 2;
+                for (int j = 0; j < pairs && j < maxResults; j++) {
+                    uint64_t t_start = timestamps[j*2];
+                    uint64_t t_end = timestamps[j*2 + 1];
+
+                    if (resultCount < maxResults) {
+                        strncpy(results[resultCount].name, frame->labels[j], 63);
+                        results[resultCount].name[63] = '\0';
+                        
+                        uint64_t diff = (t_end > t_start) ? (t_end - t_start) : 0;
+                        double ns = (double)diff * g_profiler.timestampPeriod;
+                        results[resultCount].durationMs = ns / 1000000.0;
+                        results[resultCount].startTimeNs = t_start;
+                        resultCount++;
+                    }
+                }
+            }
+
+            wgpuBufferUnmap(frame->mapBuffer);
+
+            frame->state = STATE_IDLE;
+            frame->queryCount = 0; 
+        }
+    }
+
+    RGProfileFrame* currentFrame = &g_profiler.frames[g_profiler.frameIndex];
+
+    if (currentFrame->queryCount > 0 && currentFrame->state == STATE_IDLE) {
+        WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(GetDevice(), NULL);
+
+        wgpuCommandEncoderResolveQuerySet(
+            enc, 
+            g_profiler.querySet, 
+            0, 
+            currentFrame->queryCount, 
+            currentFrame->resolveBuffer, 
+            0
+        );
+
+        wgpuCommandEncoderCopyBufferToBuffer(
+            enc, 
+            currentFrame->resolveBuffer, 0, 
+            currentFrame->mapBuffer, 0, 
+            currentFrame->queryCount * sizeof(uint64_t)
+        );
+
+        WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, NULL);
+        wgpuQueueSubmit(GetQueue(), 1, &cmd);
+        wgpuCommandBufferRelease(cmd);
+        wgpuCommandEncoderRelease(enc);
+
+        currentFrame->state = STATE_MAPPING;
+        
+        wgpuBufferMapAsync(
+            currentFrame->mapBuffer, 
+            WGPUMapMode_Read, 
+            0, 
+            currentFrame->queryCount * sizeof(uint64_t), 
+            (WGPUBufferMapCallbackInfo){
+                .callback = onProfilerMapAsync,
+                .userdata1 = currentFrame, 
+                .mode = WGPUCallbackMode_AllowSpontaneous
+            }
+        );
+    } else if (currentFrame->queryCount > 0 && currentFrame->state != STATE_IDLE) {
+        TRACELOG(LOG_WARNING, "Profiler skipped frame %d (state: %d)", g_profiler.frameIndex, currentFrame->state);
+    }
+
+    int nextIndex = (g_profiler.frameIndex + 1) % PROFILER_FRAMES_IN_FLIGHT;
+    RGProfileFrame* nextFrame = &g_profiler.frames[nextIndex];
+
+    if (nextFrame->state == STATE_IDLE) {
+        nextFrame->queryCount = 0;
+    }
+
+    g_profiler.frameIndex = nextIndex;
+
+    return resultCount;
+}

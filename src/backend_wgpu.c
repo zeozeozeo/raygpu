@@ -259,8 +259,10 @@ void BindShaderWithSettings(Shader shader, PrimitiveType drawMode, RenderSetting
     impl->state.settings = settings;
     impl->state.colorAttachmentState = GetActiveRenderPass()->colorAttachmentState;
     WGPURenderPipeline activePipeline = PipelineHashMap_getOrCreate(&impl->pipelineCache, &impl->state, &impl->shaderModule, &impl->bglayout, &impl->layout);
-    wgpuRenderPassEncoderSetPipeline(g_renderstate.activeRenderpass->rpEncoder, activePipeline);
-    wgpuRenderPassEncoderSetBindGroup(g_renderstate.activeRenderpass->rpEncoder, 0, UpdateAndGetNativeBindGroup(&impl->bindGroup), 0, NULL);
+    if (activePipeline) {
+        wgpuRenderPassEncoderSetPipeline(g_renderstate.activeRenderpass->rpEncoder, activePipeline);
+        wgpuRenderPassEncoderSetBindGroup(g_renderstate.activeRenderpass->rpEncoder, 0, UpdateAndGetNativeBindGroup(&impl->bindGroup), 0, NULL);
+    }
 }
 
 void BindShader(Shader shader, PrimitiveType drawMode) {

@@ -231,6 +231,14 @@ void UnloadTexture(Texture tex) {
         tex.id = NULL;
     }
 }
+
+// Check if a texture is valid (texture data loaded)
+bool IsTextureValid(Texture tex) {
+    return (tex.id != NULL) &&        // Validate texture handle exists
+           (tex.view != NULL) &&      // Validate texture view exists
+           (tex.width > 0) &&         // Validate texture width is positive
+           (tex.height > 0);          // Validate texture height is positive
+}
 void PresentSurface(FullSurface *fsurface) {
     wgpuSurfacePresent((WGPUSurface)fsurface->surface); 
 }
@@ -1410,18 +1418,18 @@ void negotiateSurfaceFormatAndPresentMode(const void *SurfaceHandle) {
 
     WGPUTextureFormat selectedFormat = capabilities.formats[0];
     int format_index = 0;
-    for (format_index = 0; format_index < capabilities.formatCount; format_index++) {
-        if (capabilities.formats[format_index] == WGPUTextureFormat_RGBA16Float) {
-            selectedFormat = (capabilities.formats[format_index]);
-            goto found;
-        }
-    }
-    for (format_index = 0; format_index < capabilities.formatCount; format_index++) {
-        if (capabilities.formats[format_index] == WGPUTextureFormat_BGRA8Unorm /*|| capabilities.formats[format_index] == WGPUTextureFormat_RGBA8Unorm*/) {
-            selectedFormat = (capabilities.formats[format_index]);
-            goto found;
-        }
-    }
+    //for (format_index = 0; format_index < capabilities.formatCount; format_index++) {
+    //    if (capabilities.formats[format_index] == WGPUTextureFormat_RGBA16Float) {
+    //        selectedFormat = (capabilities.formats[format_index]);
+    //        goto found;
+    //    }
+    //}
+    //for (format_index = 0; format_index < capabilities.formatCount; format_index++) {
+    //    if (capabilities.formats[format_index] == WGPUTextureFormat_BGRA8Unorm /*|| capabilities.formats[format_index] == WGPUTextureFormat_RGBA8Unorm*/) {
+    //        selectedFormat = (capabilities.formats[format_index]);
+    //        goto found;
+    //    }
+    //}
 found:
     #ifdef __EMSCRIPTEN__
     selectedFormat = WGPUTextureFormat_BGRA8Unorm;
@@ -1944,6 +1952,27 @@ RenderTexture LoadRenderTexture(uint32_t width, uint32_t height) {
     return ret;
 }
 
+// Check if a render texture is valid (render texture data loaded)
+bool IsRenderTextureValid(RenderTexture tex) {
+    return IsTextureValid(tex.texture) &&        // Validate primary color attachment
+           IsTextureValid(tex.depth) &&          // Validate depth attachment
+           (tex.colorAttachmentCount > 0);       // Validate at least one color attachment exists
+}
+
+// Unload render texture from GPU memory (VRAM)
+void UnloadRenderTexture(RenderTexture tex) {
+    // Unload all color attachments
+    for (uint32_t i = 0; i < tex.colorAttachmentCount; i++) {
+        UnloadTexture(tex.colorAttachments[i]);
+    }
+    
+    // Unload multisampling color texture
+    UnloadTexture(tex.colorMultisample);
+    
+    // Unload depth texture
+    UnloadTexture(tex.depth);
+}
+
 DescribedShaderModule LoadShaderModuleSPIRV(ShaderSources sourcesSpirv) {
     DescribedShaderModule ret  = {0};
 #ifndef __EMSCRIPTEN__
@@ -2246,7 +2275,7 @@ DescribedComputePipeline *LoadComputePipeline(const char *shaderCode) {
 
     quickSort_ResourceTypeDescriptor(udesc, udesc + insertIndex);
 
-    DescribedComputePipeline *ret = LoadComputePipelineEx(shaderCode, udesc, insertIndex);
+    DescribedComputePipeline *ret = LoadComputePipelineEx(shaderCode, udesc, insertIndex, NULL);
     RL_FREE(udesc);
     StringToUniformMap_free(bindings);
     RL_FREE(bindings);
@@ -2254,7 +2283,7 @@ DescribedComputePipeline *LoadComputePipeline(const char *shaderCode) {
 }
 
 RGAPI DescribedComputePipeline *
-LoadComputePipelineEx(const char *shaderCode, const ResourceTypeDescriptor *uniforms, uint32_t uniformCount) {
+LoadComputePipelineEx(const char *shaderCode, const ResourceTypeDescriptor *uniforms, uint32_t uniformCount, const char *entryPoint) {
     ShaderSources sources = singleStage(shaderCode, detectShaderLanguageSingle(shaderCode, strlen(shaderCode)), RGShaderStageEnum_Compute);
 
     StringToUniformMap* bindmap = getBindings(sources);
@@ -2267,9 +2296,22 @@ LoadComputePipelineEx(const char *shaderCode, const ResourceTypeDescriptor *unif
     pldesc.bindGroupLayouts = (WGPUBindGroupLayout *)&ret->bglayout.layout;
     WGPUPipelineLayout playout = wgpuDeviceCreatePipelineLayout((WGPUDevice)GetDevice(), &pldesc);
     ret->shaderModule = LoadShaderModule(sources);
-    desc.compute.module = (WGPUShaderModule)ret->shaderModule.stages[RGShaderStageEnum_Compute].module;
 
-    desc.compute.entryPoint = CLITERAL(WGPUStringView){ret->shaderModule.reflectionInfo.ep[RGShaderStageEnum_Compute].name, strlen(ret->shaderModule.reflectionInfo.ep[RGShaderStageEnum_Compute].name)};
+    const char* epName = NULL;
+
+    if (entryPoint && entryPoint[0] != '\0') {
+        epName = entryPoint;
+    } else if (ret->shaderModule.reflectionInfo.ep[RGShaderStageEnum_Compute].name[0] != '\0') {
+        epName = ret->shaderModule.reflectionInfo.ep[RGShaderStageEnum_Compute].name;
+    }
+
+    if (epName == NULL) {
+        TRACELOG(LOG_FATAL, "Failed to find Compute entry point in shader (Tint reflection failed and no explicit name provided).");
+    }
+
+    desc.compute.module = (WGPUShaderModule)ret->shaderModule.stages[RGShaderStageEnum_Compute].module;
+    desc.compute.entryPoint = CLITERAL(WGPUStringView){epName, strlen(epName)};
+
     desc.layout = playout;
     WGPUDevice device = (WGPUDevice)GetDevice();
     ret->pipeline = wgpuDeviceCreateComputePipeline((WGPUDevice)GetDevice(), &desc);

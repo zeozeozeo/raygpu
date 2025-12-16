@@ -499,13 +499,12 @@ void FillReflectionInfo(DescribedShaderModule* module){
 
 }
 DescribedShaderModule LoadShaderModuleWGSL(ShaderSources sources) {
-    
     DescribedShaderModule ret = {0};
     #if SUPPORT_WGPU_BACKEND == 1 || SUPPORT_WGPU_BACKEND == 0
 
     rassert(sources.language == sourceTypeWGSL, "Source language must be wgsl for this function");
     
-    for(uint32_t i = 0;i < sources.sourceCount;i++){
+    for(uint32_t i = 0; i < sources.sourceCount; i++){
         
         WGPUShaderSourceWGSL source = {
             .chain = {.sType = WGPUSType_ShaderSourceWGSL},
@@ -515,30 +514,28 @@ DescribedShaderModule LoadShaderModuleWGSL(ShaderSources sources) {
             }
         };
 
-        
-        
         WGPUShaderModuleDescriptor mDesc = {
             .nextInChain = &source.chain
         };
         WGPUShaderModule module = wgpuDeviceCreateShaderModule((WGPUDevice)GetDevice(), &mDesc);
         WGPUShaderStage sourceStageMask = sources.sources[i].stageMask;
         
-        for(uint32_t i = 0;i < RGShaderStageEnum_EnumCount;++i){
-            if(((uint32_t)(sourceStageMask)) & (1u << i)){
-                ret.stages[i].module = module;
+        for(uint32_t j = 0; j < RGShaderStageEnum_EnumCount; ++j){
+            if(((uint32_t)(sourceStageMask)) & (1u << j)){
+                ret.stages[j].module = module;
             }
         }
         
+        // Reflection to find entry points
         EntryPointSet entryPoints = getEntryPointsWGSL((const char*)sources.sources[i].data);
-        for(uint32_t i = 0;i < RGShaderStageEnum_EnumCount;i++){
-            //rassert(entryPoints[i].second.size() < 15, "Entrypoint name must be shorter than 15 characters");
-            if(entryPoints.names[i][0] == '\0'){
+        for(uint32_t j = 0; j < RGShaderStageEnum_EnumCount; j++){
+            if(entryPoints.names[j][0] == '\0'){
                 continue;
             }
-            char* dest = ret.reflectionInfo.ep[i].name;
-            memcpy(dest, entryPoints.names[i], MAX_SHADER_ENTRYPOINT_NAME_LENGTH + 1);
+            char* dest = ret.reflectionInfo.ep[j].name;
+            memcpy(dest, entryPoints.names[j], MAX_SHADER_ENTRYPOINT_NAME_LENGTH + 1);
             if(dest[MAX_SHADER_ENTRYPOINT_NAME_LENGTH] != '\0'){
-                printf("%s\n", ret.reflectionInfo.ep[i].name);
+                printf("%s\n", ret.reflectionInfo.ep[j].name);
             }
             assert(dest[MAX_SHADER_ENTRYPOINT_NAME_LENGTH] == '\0');
             dest[MAX_SHADER_ENTRYPOINT_NAME_LENGTH] = '\0';
@@ -2630,6 +2627,14 @@ void UnloadImage(Image img){
     RL_FREE(img.data);
     img.data = NULL;
 }
+
+// Check if an image is valid (image data loaded)
+bool IsImageValid(Image img) {
+    return (img.data != NULL) &&        // Validate image data exists
+           (img.width > 0) &&           // Validate image width is positive
+           (img.height > 0) &&          // Validate image height is positive
+           (img.mipmaps > 0);           // Validate image has at least one mipmap level
+}
 Image LoadImageFromMemory(const char* extension, const void* data, size_t dataSize){
     Image image  = {0};
     image.mipmaps = 1;
@@ -2643,7 +2648,7 @@ Image LoadImageFromMemory(const char* extension, const void* data, size_t dataSi
     }
     return image;
 }
-Image GenImageColor(Color a, uint32_t width, uint32_t height){
+Image GenImageColor(int width, int height, Color c){
     Image ret = {
         .data = RL_CALLOC((size_t)width * height, sizeof(Color)),
         .width = width, 
@@ -2655,7 +2660,7 @@ Image GenImageColor(Color a, uint32_t width, uint32_t height){
     for(uint32_t i = 0;i < height;i++){
         for(uint32_t j = 0;j < width;j++){
             const size_t index = (size_t)(i) * width + j;
-            ((Color*)(ret.data))[index] = a;
+            ((Color*)(ret.data))[index] = c;
         }
     }
     return ret;

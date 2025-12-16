@@ -1485,9 +1485,11 @@ RGAPI Color* LoadImageColors(Image img);
 RGAPI void UnloadImageColors(Color* cols);
 RGAPI uint64_t RoundUpToNextMultipleOf256(uint64_t x);
 RGAPI void UnloadImage(Image img);
+RGAPI bool IsImageValid(Image img);                                                     // Check if an image is valid (image data loaded)
 RGAPI void UnloadTexture(Texture tex);
+RGAPI bool IsTextureValid(Texture tex);
 RGAPI Image LoadImageFromMemory(const char* extension, const void* data, size_t dataSize);
-RGAPI Image GenImageColor(Color a, uint32_t width, uint32_t height);
+RGAPI Image GenImageColor(int width, int height, Color a);
 RGAPI Image GenImageChecker(Color a, Color b, uint32_t width, uint32_t height, uint32_t checkerCount);
 RGAPI void SaveImage(Image img, const char* filepath);
 RGAPI unsigned char *DecodeDataBase64(const unsigned char *data, int *outputSize);
@@ -1523,6 +1525,9 @@ RGAPI void LoadFontDefault(void);
 RGAPI Font GetFontDefault(void);
 RGAPI GlyphInfo* LoadFontData(const unsigned char *fileData, int dataSize, int fontSize, int *codepoints, int codepointCount, int type);
 RGAPI Image GenImageFontAtlas(const GlyphInfo *glyphs, Rectangle **glyphRecs, int glyphCount, int fontSize, int padding, int packMethod);
+RGAPI Font LoadFont(const char *fileName);                                             // Load Font from GPU memory (VRAM)
+RGAPI void UnloadFont(Font font);                                                      // Unload Font from GPU memory (VRAM)
+RGAPI bool IsFontValid(Font font);                                                     // Check if a font is valid (font data loaded)
 RGAPI void SetShapesTexture(Texture tex, Rectangle rec);
 RGAPI void UseTexture(Texture tex);
 RGAPI void UseNoTexture(cwoid);
@@ -1645,6 +1650,8 @@ RGAPI Texture GetDefaultTexture(cwoid);
 RGAPI void UnloadPipeline(DescribedPipeline* pl);
 RGAPI RenderTexture LoadRenderTexture(uint32_t width, uint32_t height);
 RGAPI RenderTexture LoadRenderTextureEx(uint32_t width, uint32_t height, PixelFormat colorFormat, uint32_t sampleCount, uint32_t attachmentCount);
+RGAPI bool IsRenderTextureValid(RenderTexture tex);                                     // Check if a render texture is valid (render texture data loaded)
+RGAPI void UnloadRenderTexture(RenderTexture tex);                                      // Unload render texture from GPU memory (VRAM)
 RGAPI size_t GetPixelSizeInBytes(PixelFormat format);
 RGAPI Texture LoadBlankTexture(uint32_t width, uint32_t height);
 RGAPI Texture LoadTexture(const char* filename);

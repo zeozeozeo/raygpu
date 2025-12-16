@@ -226,10 +226,10 @@ if((SUPPORT_WGPU_BACKEND OR SUPPORT_WGSL_PARSER) AND NOT EMSCRIPTEN)
         set(TINT_ENABLE_INSTALL ON CACHE BOOL "Enable install step for Tint libraries" FORCE)
         set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
     endif()
-
-
-    if(UNIX AND NOT ANDROID)
-        find_package(PkgConfig QUIET)
+    
+    
+    if(UNIX AND NOT ANDROID AND NOT APPLE)
+        find_package(PkgConfig QUIET)    
         pkg_check_modules(WAYLAND_CLIENT QUIET wayland-client)
         if(WAYLAND_CLIENT_FOUND)
             option(RAYGPU_USE_WAYLAND "" ON)
@@ -328,9 +328,13 @@ if(SUPPORT_SDL3)
         else()
             set(SDL_COCOA OFF)
         endif()
+        if(NOT SDL3_URL)
+            set(SDL3_URL "https://github.com/libsdl-org/SDL/archive/refs/tags/release-3.2.22.tar.gz")
+        endif()
+        message(STATUS "Fetching SDL3 from ${SDL3_URL}")
         FetchContent_Declare(
             sdl3fetch
-            URL "https://github.com/libsdl-org/SDL/archive/refs/tags/release-3.2.22.tar.gz"
+            URL ${SDL3_URL}
             DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
         set(SDL_STATIC ON)

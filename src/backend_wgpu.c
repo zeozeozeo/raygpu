@@ -231,6 +231,14 @@ void UnloadTexture(Texture tex) {
         tex.id = NULL;
     }
 }
+
+// Check if a texture is valid (texture data loaded)
+bool IsTextureValid(Texture tex) {
+    return (tex.id != NULL) &&        // Validate texture handle exists
+           (tex.view != NULL) &&      // Validate texture view exists
+           (tex.width > 0) &&         // Validate texture width is positive
+           (tex.height > 0);          // Validate texture height is positive
+}
 void PresentSurface(FullSurface *fsurface) {
     wgpuSurfacePresent((WGPUSurface)fsurface->surface); 
 }
@@ -1956,6 +1964,27 @@ RenderTexture LoadRenderTexture(uint32_t width, uint32_t height) {
     return ret;
 }
 
+// Check if a render texture is valid (render texture data loaded)
+bool IsRenderTextureValid(RenderTexture tex) {
+    return IsTextureValid(tex.texture) &&        // Validate primary color attachment
+           IsTextureValid(tex.depth) &&          // Validate depth attachment
+           (tex.colorAttachmentCount > 0);       // Validate at least one color attachment exists
+}
+
+// Unload render texture from GPU memory (VRAM)
+void UnloadRenderTexture(RenderTexture tex) {
+    // Unload all color attachments
+    for (uint32_t i = 0; i < tex.colorAttachmentCount; i++) {
+        UnloadTexture(tex.colorAttachments[i]);
+    }
+    
+    // Unload multisampling color texture
+    UnloadTexture(tex.colorMultisample);
+    
+    // Unload depth texture
+    UnloadTexture(tex.depth);
+}
+
 DescribedShaderModule LoadShaderModuleSPIRV(ShaderSources sourcesSpirv) {
     DescribedShaderModule ret  = {0};
 #ifndef __EMSCRIPTEN__
@@ -2291,7 +2320,7 @@ LoadComputePipelineEx(const char *shaderCode, const ResourceTypeDescriptor *unif
     if (epName == NULL) {
         TRACELOG(LOG_FATAL, "Failed to find Compute entry point in shader (Tint reflection failed and no explicit name provided).");
     }
-    
+
     desc.compute.module = (WGPUShaderModule)ret->shaderModule.stages[RGShaderStageEnum_Compute].module;
     desc.compute.entryPoint = CLITERAL(WGPUStringView){epName, strlen(epName)};
 

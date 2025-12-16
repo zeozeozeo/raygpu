@@ -228,23 +228,23 @@ int GetMonitorHeight_GLFW(cwoid){
     }
     return mode->height;
 }
-void ShowCursor_GLFW(GLFWwindow* window){
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+void ShowCursor_GLFW(void* window){
+    glfwSetInputMode((GLFWwindow*)window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
-void HideCursor_GLFW(GLFWwindow* window){
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+void HideCursor_GLFW(void* window){
+    glfwSetInputMode((GLFWwindow*)window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 }
-bool IsCursorHidden_GLFW(GLFWwindow* window){
-    int mode = glfwGetInputMode(window, GLFW_CURSOR);
+bool IsCursorHidden_GLFW(void* window){
+    int mode = glfwGetInputMode((GLFWwindow*)window, GLFW_CURSOR);
     return (mode == GLFW_CURSOR_HIDDEN || mode == GLFW_CURSOR_DISABLED);
 }
-void EnableCursor_GLFW(GLFWwindow* window){
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    if (glfwRawMouseMotionSupported()) glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
+void EnableCursor_GLFW(void* window){
+    glfwSetInputMode((GLFWwindow*)window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    if (glfwRawMouseMotionSupported()) glfwSetInputMode((GLFWwindow*)window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
 }
-void DisableCursor_GLFW(GLFWwindow* window){
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    if (glfwRawMouseMotionSupported()) glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+void DisableCursor_GLFW(void* window){
+    glfwSetInputMode((GLFWwindow*)window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    if (glfwRawMouseMotionSupported()) glfwSetInputMode((GLFWwindow*)window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 }
 void PollEvents_SDL(cwoid);
 

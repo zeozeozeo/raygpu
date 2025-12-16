@@ -1824,11 +1824,11 @@ bool IsCursorOnScreen(cwoid){
 }
 
 #if SUPPORT_GLFW == 1
-void ShowCursor_GLFW(GLFWwindow* window);
-void HideCursor_GLFW(GLFWwindow* window);
-bool IsCursorHidden_GLFW(GLFWwindow* window);
-void EnableCursor_GLFW(GLFWwindow* window);
-void DisableCursor_GLFW(GLFWwindow* window);
+void ShowCursor_GLFW(void* window);
+void HideCursor_GLFW(void* window);
+bool IsCursorHidden_GLFW(void* window);
+void EnableCursor_GLFW(void* window);
+void DisableCursor_GLFW(void* window);
 #endif
 
 #if SUPPORT_SDL3 == 1
@@ -1847,14 +1847,13 @@ void EnableCursor_SDL2(void* window);
 void DisableCursor_SDL2(void* window);
 #endif
 
-// TODO: implement for RGFW
-//#if SUPPORT_RGFW == 1
-//void ShowCursor_RGFW(void* window);
-//void HideCursor_RGFW(void* window);
-//bool IsCursorHidden_RGFW(void* window);
-//void EnableCursor_RGFW(void* window);
-//void DisableCursor_RGFW(void* window);
-//#endif
+#if SUPPORT_RGFW == 1
+void ShowCursor_RGFW(void* window);
+void HideCursor_RGFW(void* window);
+bool IsCursorHidden_RGFW(void* window);
+void EnableCursor_RGFW(void* window);
+void DisableCursor_RGFW(void* window);
+#endif
 
 RGAPI void ShowCursor(cwoid){
     RGWindowImpl* impl = CreatedWindowMap_get(&g_renderstate.createdSubwindows, GetActiveWindowHandle());

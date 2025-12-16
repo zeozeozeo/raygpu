@@ -296,6 +296,18 @@ SubWindow InitWindow_RGFW(int width, int height, const char* title){
     return ret;
 }
 
-
+void ShowCursor_RGFW(void* window) {
+    RGFW_window_showMouse((RGFW_window*)window, true);
+}
+void HideCursor_RGFW(void* window) {
+    RGFW_window_showMouse((RGFW_window*)window, false);
+}
+void EnableCursor_RGFW(void* window) {
+    RGFW_window_mouseUnhold((RGFW_window*)window);
+}
+void DisableCursor_RGFW(void* window) {
+    RGFW_window_mouseHold((RGFW_window*)window, RGFW_AREA(0, 0));
+    HideCursor_RGFW((RGFW_window*)window);
+}
 
 // end file src/InitWindow_RGFW.cpp

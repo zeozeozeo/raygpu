@@ -483,25 +483,23 @@ void ToggleFullscreen_SDL3(cwoid){
     }
 }
 
-void ShowCursor_SDL3(void* windowHandle){
+void ShowCursor_SDL3(void* window){
+    SDL_SetWindowRelativeMouseMode((SDL_Window*)window, false);
     SDL_ShowCursor();
 }
-
-void HideCursor_SDL3(void* windowHandle){
+void HideCursor_SDL3(void* window){
+    SDL_SetWindowRelativeMouseMode((SDL_Window*)window, false);
     SDL_HideCursor();
 }
-
-bool IsCursorHidden_SDL3(void* windowHandle){
-    return !SDL_CursorVisible();
+bool IsCursorHidden_SDL3(void* window){
+    return !SDL_CursorVisible() || SDL_GetWindowRelativeMouseMode((SDL_Window*)window);
 }
-
-void EnableCursor_SDL3(void* windowHandle){
-    SDL_SetWindowRelativeMouseMode((SDL_Window*)windowHandle, false);
+void EnableCursor_SDL3(void* window){
+    SDL_SetWindowRelativeMouseMode((SDL_Window*)window, false);
     SDL_ShowCursor();
 }
-
-void DisableCursor_SDL3(void* windowHandle){
-    SDL_SetWindowRelativeMouseMode((SDL_Window*)windowHandle, true);
+void DisableCursor_SDL3(void* window){
+    SDL_SetWindowRelativeMouseMode((SDL_Window*)window, true);
 }
 
 // end file src/InitWindow_SDL3.c

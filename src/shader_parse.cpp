@@ -23,6 +23,8 @@
 * SOFTWARE.
 */
 
+#include "src/tint/api/tint.h"
+#include "src/tint/utils/result.h"
 #include <config.h>
 #include <raygpu.h>
 #include <internals.h>
@@ -331,6 +333,33 @@ StringToUniformMap* getBindingsWGSL_Tint(ShaderSources sources) {
     }
     return ret;
 }
+
+ShaderSources raiseSpirvToWGSL_Tint(ShaderSources sources){
+    if(sources.language != sourceTypeSPIRV || sources.sourceCount == 0){
+        return ShaderSources{};
+    }
+    ShaderSources ret{.language = sourceTypeWGSL};
+    for(uint32_t i = 0;i < sources.sourceCount;i++){
+        std::vector<uint32_t> spirvData(reinterpret_cast<const uint32_t*>(sources.sources[i].data), reinterpret_cast<const uint32_t*>(reinterpret_cast<const char*>(sources.sources[i].data) + sources.sources[i].sizeInBytes));
+        tint::Result<std::string> wgslResult = tint::SpirvToWgsl(spirvData);
+        if(wgslResult == tint::Success){
+            
+            const std::string& wgsl = wgslResult.Get();
+            char* sourcePtr = (char*)RL_CALLOC(wgsl.size() + 1, 1);
+            std::memcpy(sourcePtr, wgsl.c_str(), wgsl.size());
+            sourcePtr[wgsl.size()] = '\0';
+            ret.sources[i].data = sourcePtr;
+            ret.sourceCount++;
+            ret.sources[i].sizeInBytes = wgsl.size();
+            ret.sources[i].stageMask = sources.sources[i].stageMask;
+        }
+        else{
+            return ShaderSources{};
+        }
+    }
+    return ret;
+}
+
 
 #endif // tint backend
 

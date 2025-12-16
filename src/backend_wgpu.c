@@ -1599,7 +1599,6 @@ DescribedSampler LoadSamplerEx(TextureWrap amode, TextureFilter fmode, TextureFi
     return ret;
 }
 void SetBindgroupUniformBufferData(DescribedBindGroup *bg, uint32_t index, const void *data, size_t size) {
-    
     const WGPUBufferDescriptor bufferDesc = {
         .size = size,
         .usage = WGPUBufferUsage_CopySrc | WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform,

@@ -397,10 +397,8 @@ RGAPI void drawCurrentBatch(){
     #endif
 
     renderBatchVAO->buffers[0].buffer = vbo;
-    SetStorageBuffer(3, g_renderstate.identityMatrix);
     Shader activeShader = GetActiveShader();
     ShaderImpl* activeShaderImpl = GetShaderImpl(activeShader);
-    UpdateBindGroup(&activeShaderImpl->bindGroup);
     switch(current_drawmode){
         case RL_LINES:{
 

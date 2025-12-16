@@ -228,22 +228,21 @@ int GetMonitorHeight_GLFW(cwoid){
     }
     return mode->height;
 }
-void ShowCursor_GLFW(GLFWwindow* window){
-    glfwSetInputMode(g_renderstate.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+void ShowCursor_GLFW(void* window){
+    glfwSetInputMode((GLFWwindow*)window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
-void HideCursor_GLFW(GLFWwindow* window){
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+void HideCursor_GLFW(void* window){
+    glfwSetInputMode((GLFWwindow*)window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 }
-bool IsCursorHidden_GLFW(GLFWwindow* window){
-    return glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_HIDDEN;
+bool IsCursorHidden_GLFW(void* window){
+    int mode = glfwGetInputMode((GLFWwindow*)window, GLFW_CURSOR);
+    return (mode == GLFW_CURSOR_HIDDEN || mode == GLFW_CURSOR_DISABLED);
 }
-void EnableCursor_GLFW(GLFWwindow* window){
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+void EnableCursor_GLFW(void* window){
+    glfwSetInputMode((GLFWwindow*)window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
-void DisableCursorGLFW(GLFWwindow* window){
-    #if !defined(__EMSCRIPTEN__) && !defined(DAWN_USE_WAYLAND) && defined(GLFW_CURSOR_CAPTURED)
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_CAPTURED);
-    #endif
+void DisableCursor_GLFW(void* window){
+    glfwSetInputMode((GLFWwindow*)window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 void PollEvents_SDL(cwoid);
 

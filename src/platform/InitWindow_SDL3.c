@@ -406,8 +406,15 @@ RGAPI void PollEvents_SDL3() {
             ScrollCallback(window, event.wheel.x, event.wheel.y);
         } break;
         case SDL_EVENT_MOUSE_MOTION: {
-            SDL_Window *window = SDL_GetWindowFromID(event.motion.windowID);
-            MousePositionCallback(window, event.motion.x, event.motion.y);
+            SDL_Window* window = SDL_GetWindowFromID(event.motion.windowID);
+            RGWindowImpl* rgwindow = CreatedWindowMap_get(&g_renderstate.createdSubwindows, window);
+            if (SDL_GetWindowRelativeMouseMode(window)) {
+                rgwindow->input_state.mousePos.x += event.motion.xrel;
+                rgwindow->input_state.mousePos.y += event.motion.yrel;
+            } else {
+                double scale = rgwindow->scaleFactor;
+                MousePositionCallback(window, event.motion.x, event.motion.y);
+            }
         } break;
 
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
@@ -450,7 +457,15 @@ RGAPI void PollEvents_SDL3() {
         //    // Handle text editing if necessary
         //    // Typically used for input method editors (IMEs)
         //} break;
-
+        case SDL_EVENT_WINDOW_MOUSE_ENTER: {
+            SDL_Window* window = SDL_GetWindowFromID(event.window.windowID);
+            CreatedWindowMap_get(&g_renderstate.createdSubwindows, window)->input_state.cursorInWindow = true;
+        } break;
+        
+        case SDL_EVENT_WINDOW_MOUSE_LEAVE: {
+            SDL_Window* window = SDL_GetWindowFromID(event.window.windowID);
+            CreatedWindowMap_get(&g_renderstate.createdSubwindows, window)->input_state.cursorInWindow = false;
+        } break;
             // Handle other events as needed
 
         default:
@@ -483,7 +498,21 @@ void ToggleFullscreen_SDL3(cwoid){
     }
 }
 
-
-
+void ShowCursor_SDL3(void* window){
+    SDL_ShowCursor();
+}
+void HideCursor_SDL3(void* window){
+    SDL_HideCursor();
+}
+bool IsCursorHidden_SDL3(void* window){
+    return !SDL_CursorVisible() || SDL_GetWindowRelativeMouseMode((SDL_Window*)window);
+}
+void EnableCursor_SDL3(void* window){
+    SDL_SetWindowRelativeMouseMode((SDL_Window*)window, false);
+    SDL_ShowCursor();
+}
+void DisableCursor_SDL3(void* window){
+    SDL_SetWindowRelativeMouseMode((SDL_Window*)window, true);
+}
 
 // end file src/InitWindow_SDL3.c

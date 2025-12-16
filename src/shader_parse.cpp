@@ -151,7 +151,17 @@ EntryPointSet getEntryPointsWGSL_Tint(const char* shaderSourceWGSL) {
 
     tint::Source::File file("", shaderSourceWGSL);
     tint::Program prog = tint::wgsl::reader::Parse(&file);
-    if (!prog.IsValid()) return EntryPointSet{};
+
+    if (!prog.IsValid()) {
+        auto& diags = prog.Diagnostics();
+        for (const auto& diag : diags) {
+            TRACELOG(LOG_ERROR, "Tint Error: %s", diag.message.Plain().c_str());
+            if (diag.source.range.begin.line > 0) {
+                TRACELOG(LOG_ERROR, "  Line: %zu:%zu", diag.source.range.begin.line, diag.source.range.begin.column);
+            }
+        }
+        return EntryPointSet{};
+    }
 
     tint::inspector::Inspector insp(prog);
     auto eps = insp.GetEntryPoints();
@@ -172,7 +182,15 @@ InOutAttributeInfo getAttributesWGSL_Tint(ShaderSources sources) {
     const char* src = (const char*)sources.sources[0].data;
     tint::Source::File file("", src);
     tint::Program prog = tint::wgsl::reader::Parse(&file);
-    if (!prog.IsValid()) return info;
+    
+    if (!prog.IsValid()) {
+        TRACELOG(LOG_ERROR, "Tint Error in getAttributesWGSL_Tint:");
+        auto& diags = prog.Diagnostics();
+        for (const auto& diag : diags) {
+            TRACELOG(LOG_ERROR, "%s", diag.message.Plain().c_str());
+        }
+        return info;
+    }
 
     tint::inspector::Inspector insp(prog);
     auto eps = insp.GetEntryPoints();
@@ -194,8 +212,6 @@ InOutAttributeInfo getAttributesWGSL_Tint(ShaderSources sources) {
         }
         break; // first vertex EP only
     }
-
-    // Fragment outputs: not strictly required by many pipelines; leave zeroed.
     return info;
 }
 
@@ -207,7 +223,15 @@ StringToUniformMap* getBindingsWGSL_Tint(ShaderSources sources) {
     tint::Source::File file("", src);
     tint::wgsl::reader::Options options{};
     tint::Program prog = tint::wgsl::reader::Parse(&file, options);
-    if (!prog.IsValid()) return nullptr;
+
+    if (!prog.IsValid()) {
+        TRACELOG(LOG_ERROR, "Tint Error in getBindingsWGSL_Tint:");
+        auto& diags = prog.Diagnostics();
+        for (const auto& diag : diags) {
+            TRACELOG(LOG_ERROR, "%s", diag.message.Plain().c_str());
+        }
+        return nullptr;
+    }
     
     // Walk AST globals to classify bindings.
     for (auto* g : prog.AST().GlobalVariables()) {

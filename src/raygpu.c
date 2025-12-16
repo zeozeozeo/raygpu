@@ -499,13 +499,12 @@ void FillReflectionInfo(DescribedShaderModule* module){
 
 }
 DescribedShaderModule LoadShaderModuleWGSL(ShaderSources sources) {
-    
     DescribedShaderModule ret = {0};
     #if SUPPORT_WGPU_BACKEND == 1 || SUPPORT_WGPU_BACKEND == 0
 
     rassert(sources.language == sourceTypeWGSL, "Source language must be wgsl for this function");
     
-    for(uint32_t i = 0;i < sources.sourceCount;i++){
+    for(uint32_t i = 0; i < sources.sourceCount; i++){
         
         WGPUShaderSourceWGSL source = {
             .chain = {.sType = WGPUSType_ShaderSourceWGSL},
@@ -515,30 +514,28 @@ DescribedShaderModule LoadShaderModuleWGSL(ShaderSources sources) {
             }
         };
 
-        
-        
         WGPUShaderModuleDescriptor mDesc = {
             .nextInChain = &source.chain
         };
         WGPUShaderModule module = wgpuDeviceCreateShaderModule((WGPUDevice)GetDevice(), &mDesc);
         WGPUShaderStage sourceStageMask = sources.sources[i].stageMask;
         
-        for(uint32_t i = 0;i < RGShaderStageEnum_EnumCount;++i){
-            if(((uint32_t)(sourceStageMask)) & (1u << i)){
-                ret.stages[i].module = module;
+        for(uint32_t j = 0; j < RGShaderStageEnum_EnumCount; ++j){
+            if(((uint32_t)(sourceStageMask)) & (1u << j)){
+                ret.stages[j].module = module;
             }
         }
         
+        // Reflection to find entry points
         EntryPointSet entryPoints = getEntryPointsWGSL((const char*)sources.sources[i].data);
-        for(uint32_t i = 0;i < RGShaderStageEnum_EnumCount;i++){
-            //rassert(entryPoints[i].second.size() < 15, "Entrypoint name must be shorter than 15 characters");
-            if(entryPoints.names[i][0] == '\0'){
+        for(uint32_t j = 0; j < RGShaderStageEnum_EnumCount; j++){
+            if(entryPoints.names[j][0] == '\0'){
                 continue;
             }
-            char* dest = ret.reflectionInfo.ep[i].name;
-            memcpy(dest, entryPoints.names[i], MAX_SHADER_ENTRYPOINT_NAME_LENGTH + 1);
+            char* dest = ret.reflectionInfo.ep[j].name;
+            memcpy(dest, entryPoints.names[j], MAX_SHADER_ENTRYPOINT_NAME_LENGTH + 1);
             if(dest[MAX_SHADER_ENTRYPOINT_NAME_LENGTH] != '\0'){
-                printf("%s\n", ret.reflectionInfo.ep[i].name);
+                printf("%s\n", ret.reflectionInfo.ep[j].name);
             }
             assert(dest[MAX_SHADER_ENTRYPOINT_NAME_LENGTH] == '\0');
             dest[MAX_SHADER_ENTRYPOINT_NAME_LENGTH] = '\0';

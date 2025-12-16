@@ -240,11 +240,9 @@ bool IsCursorHidden_GLFW(void* window){
 }
 void EnableCursor_GLFW(void* window){
     glfwSetInputMode((GLFWwindow*)window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    if (glfwRawMouseMotionSupported()) glfwSetInputMode((GLFWwindow*)window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
 }
 void DisableCursor_GLFW(void* window){
     glfwSetInputMode((GLFWwindow*)window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    if (glfwRawMouseMotionSupported()) glfwSetInputMode((GLFWwindow*)window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 }
 void PollEvents_SDL(cwoid);
 

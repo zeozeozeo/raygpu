@@ -1252,6 +1252,9 @@ static bool initResumeEntry(InitContext_Impl _ctx){
 #endif
 }
 
+#if SUPPORT_WGPU_BACKEND == 1
+WGPUChainedStruct* chainDawnStuff();
+#endif
 
 void InitBackend(InitContext_Impl _ctx) {
     g_wgpustate = (wgpustate){0};
@@ -1261,20 +1264,27 @@ void InitBackend(InitContext_Impl _ctx) {
         WGPUInstanceFeatureName_TimedWaitAny,
         WGPUInstanceFeatureName_ShaderSourceSPIRV
     };
+
+    WGPUChainedStruct* chainHead = NULL;
+
+    #if defined(_WIN32) && SUPPORT_WGPU_BACKEND == 1
+    chainHead = chainDawnStuff();
+    #endif
+
     #if SUPPORT_VULKAN_BACKEND == 1
     const static char* const vlayername = "VK_LAYER_KHRONOS_validation";
     WGPUInstanceLayerSelection isl = {
         .chain = {
-            .sType = WGPUSType_InstanceLayerSelection
+            .sType = WGPUSType_InstanceLayerSelection,
+            .next = chainHead,
         },
         .instanceLayers = &vlayername,
         .instanceLayerCount = 1
     };
     #endif
     WGPUInstanceDescriptor idesc = {
-        #if SUPPORT_VULKAN_BACKEND == 1 && !defined(NDEBUG)
-        .nextInChain = &isl.chain,
-        #elif defined(ASSUME_EM_ASYNCIFY) 
+        .nextInChain = chainHead,
+        #if defined(ASSUME_EM_ASYNCIFY) 
         .requiredFeatureCount = 1,
         .requiredFeatures = instanceFeatures
         #else

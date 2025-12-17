@@ -1274,9 +1274,11 @@ void InitBackend(InitContext_Impl _ctx) {
     WGPUInstanceDescriptor idesc = {
         #if SUPPORT_VULKAN_BACKEND == 1 && !defined(NDEBUG)
         .nextInChain = &isl.chain,
-        #endif
-        #if !defined(__EMSCRIPTEN__) || defined(ASSUME_EM_ASYNCIFY) 
+        #elif defined(ASSUME_EM_ASYNCIFY) 
         .requiredFeatureCount = 1,
+        .requiredFeatures = instanceFeatures
+        #else
+        .requiredFeatureCount = 2,
         .requiredFeatures = instanceFeatures
         #endif
     };

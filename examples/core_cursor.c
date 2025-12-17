@@ -1,4 +1,4 @@
-#include "raygpu.h"
+#include <raygpu.h>
 #include <stdio.h>
 
 int main(void) {

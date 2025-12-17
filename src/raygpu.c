@@ -1836,14 +1836,6 @@ void EnableCursor_SDL3(void* window);
 void DisableCursor_SDL3(void* window);
 #endif
 
-#if SUPPORT_SDL2 == 1
-void ShowCursor_SDL2(void* window);
-void HideCursor_SDL2(void* window);
-bool IsCursorHidden_SDL2(void* window);
-void EnableCursor_SDL2(void* window);
-void DisableCursor_SDL2(void* window);
-#endif
-
 #if SUPPORT_RGFW == 1
 void ShowCursor_RGFW(void* window);
 void HideCursor_RGFW(void* window);
@@ -1862,9 +1854,6 @@ RGAPI void ShowCursor(cwoid){
         #endif
         #if SUPPORT_SDL3 == 1
         case windowType_sdl3: ShowCursor_SDL3(impl->handle); break;
-        #endif
-        #if SUPPORT_SDL2 == 1
-        case windowType_sdl2: ShowCursor_SDL2(impl->handle); break;
         #endif
         #if SUPPORT_RGFW == 1
         case windowType_rgfw: ShowCursor_RGFW(impl->handle); break;
@@ -1885,9 +1874,6 @@ RGAPI void HideCursor(cwoid){
         #if SUPPORT_SDL3 == 1
         case windowType_sdl3: HideCursor_SDL3(impl->handle); break;
         #endif
-        #if SUPPORT_SDL2 == 1
-        case windowType_sdl2: HideCursor_SDL2(impl->handle); break;
-        #endif
         #if SUPPORT_RGFW == 1
         case windowType_rgfw: HideCursor_RGFW(impl->handle); break;
         #endif
@@ -1905,9 +1891,6 @@ RGAPI bool IsCursorHidden(cwoid){
         #endif
         #if SUPPORT_SDL3 == 1
         case windowType_sdl3: return IsCursorHidden_SDL3(impl->handle);
-        #endif
-        #if SUPPORT_SDL2 == 1
-        case windowType_sdl2: return IsCursorHidden_SDL2(impl->handle);
         #endif
         #if SUPPORT_RGFW == 1
         case windowType_rgfw: return IsCursorHidden_RGFW(impl->handle);
@@ -1927,9 +1910,6 @@ RGAPI void EnableCursor(cwoid) {
         #if SUPPORT_SDL3 == 1
         case windowType_sdl3: EnableCursor_SDL3(impl->handle); break;
         #endif
-        #if SUPPORT_SDL2 == 1
-        case windowType_sdl2: EnableCursor_SDL2(impl->handle); break;
-        #endif
         #if SUPPORT_RGFW == 1
         case windowType_rgfw: EnableCursor_RGFW(impl->handle); break;
         #endif
@@ -1948,9 +1928,6 @@ RGAPI void DisableCursor(cwoid) {
         #endif
         #if SUPPORT_SDL3 == 1
         case windowType_sdl3: DisableCursor_SDL3(impl->handle); break;
-        #endif
-        #if SUPPORT_SDL2 == 1
-        case windowType_sdl2: DisableCursor_SDL2(impl->handle); break;
         #endif
         #if SUPPORT_RGFW == 1
         case windowType_rgfw: DisableCursor_RGFW(impl->handle); break;

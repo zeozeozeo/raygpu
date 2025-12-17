@@ -1299,7 +1299,7 @@ void InitBackend(InitContext_Impl _ctx) {
 
     WGPUChainedStruct* chainHead = NULL;
 
-    #if defined(_WIN32) && SUPPORT_WGPU_BACKEND == 1
+    #if SUPPORT_WGPU_BACKEND == 1
     chainHead = chainDawnStuff();
     #endif
 

@@ -1272,16 +1272,16 @@ void InitBackend(InitContext_Impl _ctx) {
     #endif
 
     #if SUPPORT_VULKAN_BACKEND == 1 && !defined(NDEBUG)
-    const static char* const vlayername = "VK_LAYER_KHRONOS_validation";
-    WGPUInstanceLayerSelection isl = {
+    static const char* const vlayername = "VK_LAYER_KHRONOS_validation";
+    static WGPUInstanceLayerSelection isl = {
         .chain = {
-            .sType = WGPUSType_InstanceLayerSelection,
-            .next = chainHead,
+            .sType = WGPUSType_InstanceLayerSelection
         },
         .instanceLayers = &vlayername,
         .instanceLayerCount = 1
     };
     
+    isl.chain.next = chainHead;
     chainHead = &isl.chain;
     #endif
 
@@ -1299,7 +1299,6 @@ void InitBackend(InitContext_Impl _ctx) {
     state->instance = wgpuCreateInstance(&idesc);
     _ctx.wgpustate = (void*)state;
     initAdapterAndDevice(_ctx);
-
 }
 static bool InitBackend_DoTheRest(InitContext_Impl _ctx){
     InitContext_Impl* ctx = &_ctx;

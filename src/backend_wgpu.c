@@ -2841,17 +2841,8 @@ EntryPointSet getEntryPointsSPIRV(const uint32_t *shaderSourceSPIRV, uint32_t wo
 }
 
 void UnloadBindGroup(DescribedBindGroup *bg) {
-    if(bg->entries) {
-        for(size_t i = 0; i < bg->entryCount; ++i) {
-            if(bg->entries[i].buffer) wgpuBufferRelease((WGPUBuffer)bg->entries[i].buffer);
-            if(bg->entries[i].textureView) wgpuTextureViewRelease((WGPUTextureView)bg->entries[i].textureView);
-            if(bg->entries[i].sampler) wgpuSamplerRelease((WGPUSampler)bg->entries[i].sampler);
-        }
-        free(bg->entries);
-    }
-    if (bg->bindGroup) {
-        wgpuBindGroupRelease((WGPUBindGroup)bg->bindGroup);
-    }
+    free(bg->entries);
+    wgpuBindGroupRelease((WGPUBindGroup)bg->bindGroup);
 }
 void UnloadBindGroupLayout(DescribedBindGroupLayout *bglayout) {
     free(bglayout->entries);

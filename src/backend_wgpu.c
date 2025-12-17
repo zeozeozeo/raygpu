@@ -1303,7 +1303,7 @@ void InitBackend(InitContext_Impl _ctx) {
     chainHead = chainDawnStuff();
     #endif
 
-    #if SUPPORT_VULKAN_BACKEND == 1
+    #if SUPPORT_VULKAN_BACKEND == 1 && !defined(NDEBUG)
     const static char* const vlayername = "VK_LAYER_KHRONOS_validation";
     WGPUInstanceLayerSelection isl = {
         .chain = {
@@ -1313,7 +1313,10 @@ void InitBackend(InitContext_Impl _ctx) {
         .instanceLayers = &vlayername,
         .instanceLayerCount = 1
     };
+    
+    chainHead = &isl.chain;
     #endif
+
     WGPUInstanceDescriptor idesc = {
         .nextInChain = chainHead,
         #if defined(ASSUME_EM_ASYNCIFY) 

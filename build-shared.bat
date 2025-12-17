@@ -13,10 +13,10 @@ cmake .. -GNinja ^
     -DSUPPORT_RGFW=OFF ^
     -DSUPPORT_WGSL_PARSER=ON ^
     -DSUPPORT_WGPU_BACKEND=ON ^
-    -DCMAKE_BUILD_TYPE=Release ^
+    -DCMAKE_BUILD_TYPE=RelWithDebInfo ^
     -DCMAKE_C_FLAGS="-msse3" ^
     -DCMAKE_CXX_FLAGS="-msse3" ^
     -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
 
-cmake --build . --config Release
+cmake --build . --config RelWithDebInfo
 cd ..

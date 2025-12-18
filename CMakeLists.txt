@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.25)
 include(FetchContent)
 project(webgpu_standalone)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED True)
 if(APPLE)
     enable_language(OBJC)
     enable_language(OBJCXX)
@@ -30,8 +34,16 @@ else()
     option(SUPPORT_VULKAN_BACKEND "Enable the Vulkan Backend" ON)
 endif()
 
+if(WIN32)
+    add_compile_definitions(NOMINMAX)
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_compile_options(-Wno-assume)
+        add_compile_options(-Wno-undef)
+    endif()
+endif()
 
-if(NOT MSVC AND NOT EMSCRIPTEN)
+if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT EMSCRIPTEN)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 
@@ -124,18 +136,28 @@ else()
 endif()
 
 
-
+# workaround for
+# CMake Error at build/_deps/dawn-src/third_party/abseil-cpp/CMake/AbseilDll.cmake:730 (message):
+#  The compiler defaults to or is configured for C++ < 17.  C++ >= 17 is
+#  required and Abseil and all libraries that use Abseil must use the same C++
+#  language standard
+if(SUPPORT_WGPU_BACKEND)
+    set(ABSL_INTERNAL_AT_LEAST_CXX17 ON CACHE BOOL "Force C++17 check" FORCE)
+    set(ABSL_INTERNAL_AT_LEAST_CXX20 ON CACHE BOOL "Force C++20 check" FORCE)
+endif()
 
 if((SUPPORT_WGPU_BACKEND OR SUPPORT_WGSL_PARSER) AND NOT EMSCRIPTEN)
     # determine dawn backends to use
-    set(ENABLE_NULL_VAL ON)
+    set(ENABLE_NULL_VAL OFF)
     set(ENABLE_D3D12_VAL OFF)
     set(ENABLE_D3D11_VAL OFF)
     set(ENABLE_METAL_VAL OFF)
     set(ENABLE_VULKAN_VAL OFF)
     set(ENABLE_OPENGL_VAL OFF)
+    set(ENABLE_OPENGLES_VAL OFF)
 
     if(WIN32)
+        # windows: Vulkan, D3D12, D3D11, OpenGL, OpenGLES
         if(MINGW)
             # TODO: D3D headers on mingw?
             set(ENABLE_VULKAN_VAL ON)
@@ -144,11 +166,16 @@ if((SUPPORT_WGPU_BACKEND OR SUPPORT_WGSL_PARSER) AND NOT EMSCRIPTEN)
             set(ENABLE_D3D11_VAL ON)
             set(ENABLE_VULKAN_VAL ON)
         endif()
+        set(ENABLE_OPENGL_VAL ON)
+        set(ENABLE_OPENGLES_VAL ON)
     elseif(APPLE)
+        # Mac/iOS: Metal
         set(ENABLE_METAL_VAL ON)
     elseif(UNIX AND NOT ANDROID)
+        # Linux: Vulkan, OpenGL, OpenGLES
         set(ENABLE_VULKAN_VAL ON)
-        #set(ENABLE_OPENGL_VAL ON)
+        set(ENABLE_OPENGL_VAL ON)
+        set(ENABLE_OPENGLES_VAL ON)
     endif()
 
     if(NOT SUPPORT_WGPU_BACKEND)
@@ -159,7 +186,7 @@ if((SUPPORT_WGPU_BACKEND OR SUPPORT_WGSL_PARSER) AND NOT EMSCRIPTEN)
         set(ENABLE_OPENGL_VAL OFF)
         set(ENABLE_NULL_VAL OFF)
     else()
-        set(ENABLE_NULL_VAL ON)
+        #set(ENABLE_NULL_VAL ON)
     endif()
 
     set(DAWN_ENABLE_D3D12 ${ENABLE_D3D12_VAL} CACHE BOOL "Enable D3D12" FORCE)
@@ -169,7 +196,7 @@ if((SUPPORT_WGPU_BACKEND OR SUPPORT_WGSL_PARSER) AND NOT EMSCRIPTEN)
     set(DAWN_ENABLE_OPENGL ${ENABLE_OPENGL_VAL} CACHE BOOL "Enable OpenGL" FORCE)
     set(DAWN_ENABLE_NULL ${ENABLE_NULL_VAL} CACHE BOOL "Enable Null Backend" FORCE)
     set(DAWN_ENABLE_DESKTOP_GL ${ENABLE_OPENGL_VAL} CACHE BOOL "Enable Desktop GL" FORCE)
-    set(DAWN_ENABLE_OPENGLES OFF CACHE BOOL "Disable OpenGLES" FORCE)
+    set(DAWN_ENABLE_OPENGLES ${ENABLE_OPENGLES_VAL} CACHE BOOL "Enable OpenGLES" FORCE)
 
     set(DAWN_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
     set(DAWN_USE_WINDOWS_UI OFF CACHE BOOL "" FORCE)

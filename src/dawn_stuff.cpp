@@ -8,10 +8,11 @@
 #    include <windows.h>
 #endif
 
-extern "C" const WGPUChainedStruct* chainDawnStuff() {
+extern "C" WGPUChainedStruct* chainDawnStuff() {
     static dawn::native::DawnInstanceDescriptor dawnDesc = {};
-
+    
 #if defined(_WIN32)
+    // On Windows, add System32 as an additional search path (for vulkan-1.dll etc)
     static char systemPath[MAX_PATH] = {0};
     static const char* searchPaths[] = { systemPath };
 
@@ -37,5 +38,5 @@ extern "C" const WGPUChainedStruct* chainDawnStuff() {
     dawnDesc.backendValidationLevel = dawn::native::BackendValidationLevel::Disabled;
 #endif
 
-    return (const WGPUChainedStruct*)&dawnDesc;
+    return (WGPUChainedStruct*)&dawnDesc;
 }
